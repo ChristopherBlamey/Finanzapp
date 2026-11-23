@@ -1,0 +1,16 @@
+{
+  "name": "Finanzas",
+  "short_name": "Finanzas",
+  "description": "Carga tus cartolas y mira en qué gastas. Tus datos quedan solo en tu equipo.",
+  "lang": "es-CL",
+  "start_url": "./#resumen",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F2F2F7",
+  "theme_color": "#F2F2F7",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
