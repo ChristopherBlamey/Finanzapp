@@ -30,6 +30,8 @@ Ajustes → **Exportar respaldo** en un equipo, y **Importar respaldo** en el ot
 
 ## Historial
 
+- **1.4.0:** carga de varias cartolas a la vez (meses, bancos y tipos distintos), pestaña Para ti con alertas de cobros dobles y movimientos inusuales, gráfico de dona interactivo, búsqueda con panel de categorías y filtros rápidos, Ajustes por secciones, Resumen al centro de la barra y sin punto rojo.
+- **1.3.1:** el aviso de cartola sin guardar desaparece si la cartola ya estaba guardada y se puede descartar; los intereses de la línea de crédito cuentan como gasto.
 - **1.3.0:** base de datos local IndexedDB (con copia de respaldo), vista de cartolas guardadas con detalle y eliminación, exportación a Excel (CSV), el resumen y los movimientos muestran siempre lo guardado (incluidos internos y cuotas sin cobrar) y diagnóstico ampliado.
 - **1.2.1:** guardado verificado, la revisión de una cartola sobrevive si iOS recarga la app, lector de PDF en proceso aparte (menos memoria), registro de errores y diagnóstico en Ajustes.
 - **1.2.0:** consejos personalizados según tus gastos, presupuestos por categoría con avisos, recordatorio mensual en el calendario, vidrio translúcido o tintado, barra compacta al hacer scroll, deslizar para cambiar de mes e ícono nuevo.
