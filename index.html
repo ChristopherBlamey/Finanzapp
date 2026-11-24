@@ -16,18 +16,18 @@
 :root{
   --bg:#F2F2F7;--card:#FFFFFF;--card2:#F2F2F7;--label:#000000;--label2:rgba(60,60,67,.62);--label3:rgba(60,60,67,.32);
   --sep:rgba(60,60,67,.16);--fill:rgba(118,118,128,.12);--fill2:rgba(118,118,128,.2);--blue:#007AFF;--green:#248A3D;--green2:#34C759;--red:#FF3B30;--orange:#C93400;
-  --bar:rgba(250,250,252,.78);--shadow:0 1px 0 rgba(0,0,0,.02);--scrim:rgba(0,0,0,.28);
+  --bar:rgba(250,250,252,.62);--bar2:rgba(246,246,250,.96);--spec:rgba(255,255,255,.85);--glassedge:rgba(0,0,0,.08);--shadow:0 1px 0 rgba(0,0,0,.02);--scrim:rgba(0,0,0,.28);
   --band:#0B1D3A;--band2:#102A55;--onband:#FFFFFF;--onband2:rgba(255,255,255,.66);--glass:rgba(255,255,255,.13);--glass2:rgba(255,255,255,.22);
   color-scheme:light;box-sizing:border-box;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#000000;--band:#0D1320;--band2:#141C2E;--card:#1C1C1E;--card2:#2C2C2E;--label:#FFFFFF;--label2:rgba(235,235,245,.62);--label3:rgba(235,235,245,.3);
+  --bg:#000000;--bar2:rgba(30,30,34,.97);--spec:rgba(255,255,255,.14);--glassedge:rgba(255,255,255,.1);--band:#0D1320;--band2:#141C2E;--card:#1C1C1E;--card2:#2C2C2E;--label:#FFFFFF;--label2:rgba(235,235,245,.62);--label3:rgba(235,235,245,.3);
   --sep:rgba(84,84,88,.55);--fill:rgba(118,118,128,.24);--fill2:rgba(118,118,128,.32);--blue:#0A84FF;--green:#30D158;--green2:#30D158;--red:#FF453A;--orange:#FF9F0A;
-  --bar:rgba(22,22,24,.84);--scrim:rgba(0,0,0,.5);color-scheme:dark}}
+  --bar:rgba(28,28,32,.66);--scrim:rgba(0,0,0,.5);color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#000000;--band:#0D1320;--band2:#141C2E;--card:#1C1C1E;--card2:#2C2C2E;--label:#FFFFFF;--label2:rgba(235,235,245,.62);--label3:rgba(235,235,245,.3);
+  --bg:#000000;--bar2:rgba(30,30,34,.97);--spec:rgba(255,255,255,.14);--glassedge:rgba(255,255,255,.1);--band:#0D1320;--band2:#141C2E;--card:#1C1C1E;--card2:#2C2C2E;--label:#FFFFFF;--label2:rgba(235,235,245,.62);--label3:rgba(235,235,245,.3);
   --sep:rgba(84,84,88,.55);--fill:rgba(118,118,128,.24);--fill2:rgba(118,118,128,.32);--blue:#0A84FF;--green:#30D158;--green2:#30D158;--red:#FF453A;--orange:#FF9F0A;
-  --bar:rgba(22,22,24,.84);--scrim:rgba(0,0,0,.5);color-scheme:dark}
+  --bar:rgba(28,28,32,.66);--scrim:rgba(0,0,0,.5);color-scheme:dark}
 *,*::before,*::after{box-sizing:border-box}
 html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%;background:var(--band)}
 body{margin:0;min-height:100vh;background:var(--bg);color:var(--label);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;font-size:17px;line-height:1.35;letter-spacing:-.01em;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
@@ -218,11 +218,42 @@ textarea.note{width:100%;border:0;border-radius:12px;background:var(--card);padd
 .savebar{position:fixed;left:0;right:0;bottom:calc(max(10px, env(safe-area-inset-bottom,0px) - 8px) + 74px);z-index:39;display:flex;justify-content:center;padding:0 16px;pointer-events:none}
 .savebar .btn{pointer-events:auto;max-width:520px;box-shadow:0 10px 30px rgba(0,122,255,.35)}
 
+/* Para ti */
+.tips-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:2px 4px 10px}
+.tips-h h2{font-size:22px;font-weight:700;letter-spacing:-.02em;margin:0}
+.tips{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin:0 -16px 16px;padding:0 16px 4px;scroll-padding:0 16px}
+.tips::-webkit-scrollbar{display:none}
+.tip{flex:none;width:min(82%,340px);scroll-snap-align:start;background:var(--card);border-radius:20px;padding:14px 16px 14px;display:flex;flex-direction:column;gap:6px;position:relative}
+.tip.warn{box-shadow:inset 0 0 0 1.5px #FF9500}
+.tip.good{box-shadow:inset 0 0 0 1.5px var(--green2)}
+.tip-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
+.tip-x{width:28px;height:28px;border-radius:14px;background:var(--fill);color:var(--label2);font-size:12px}
+.tip-t{font-size:17px;font-weight:600;letter-spacing:-.015em;line-height:1.25}
+.tip-d{font-size:14px;color:var(--label2);line-height:1.4;flex:1}
+.tip-b{align-self:flex-start;margin-top:6px;color:var(--blue);font-size:15px;font-weight:600}
+@media (min-width:900px){.tips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));overflow:visible;margin:0 0 20px;padding:0}.tip{width:auto}}
+.budin{width:110px;border:0;background:var(--fill);border-radius:9px;height:34px;padding:0 10px;text-align:right;font-size:16px;outline:none}
+
+/* Barra compacta al hacer scroll */
+.minibar{position:fixed;inset:0 0 auto;z-index:39;padding-top:env(safe-area-inset-top,0px);height:calc(env(safe-area-inset-top,0px) + 46px);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--onband);background:color-mix(in srgb,var(--band) 80%,transparent);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:.5px solid rgba(255,255,255,.08);opacity:0;transform:translateY(-6px);pointer-events:none;transition:opacity .2s,transform .2s;cursor:pointer}
+.minibar.on{opacity:1;transform:none;pointer-events:auto}
+.minibar .mt{font-size:17px;font-weight:600;letter-spacing:-.01em}
+.minibar .ms{font-size:12px;color:var(--onband2)}
+:root[data-glass="tinted"] .minibar{background:var(--band)}
+.monthbar .m.in-r{animation:mr .28s ease} .monthbar .m.in-l{animation:ml .28s ease}
+@keyframes mr{from{opacity:0;transform:translateX(18px)}} @keyframes ml{from{opacity:0;transform:translateX(-18px)}}
+
 /* Barra de pestañas */
-.tabbar{position:fixed;left:14px;right:14px;bottom:max(10px, calc(env(safe-area-inset-bottom,0px) - 8px));z-index:40;display:flex;gap:2px;justify-content:space-between;height:64px;padding:5px;border-radius:32px;background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(24px);backdrop-filter:saturate(180%) blur(24px);border:.5px solid var(--sep);box-shadow:0 8px 28px rgba(0,0,0,.14)}
-.tabbar button{flex:1;display:grid;justify-items:center;align-content:center;gap:1px;font-size:10.5px;font-weight:600;color:var(--label);border-radius:27px;transition:background .2s,color .2s}
+.tabbar{position:fixed;left:14px;right:14px;bottom:max(10px, calc(env(safe-area-inset-bottom,0px) - 8px));z-index:40;display:flex;justify-content:space-between;height:64px;padding:5px;border-radius:32px;background:var(--bar);-webkit-backdrop-filter:saturate(190%) blur(26px) brightness(1.04);backdrop-filter:saturate(190%) blur(26px) brightness(1.04);border:.5px solid var(--glassedge);box-shadow:inset 0 1px 0 var(--spec),inset 0 -1px 0 rgba(0,0,0,.04),0 10px 30px rgba(0,0,0,.16)}
+:root[data-glass="tinted"] .tabbar{background:var(--bar2);-webkit-backdrop-filter:blur(26px);backdrop-filter:blur(26px)}
+.tabind{position:absolute;top:5px;bottom:5px;left:5px;width:calc((100% - 10px)/4);border-radius:27px;background:var(--fill);box-shadow:inset 0 1px 0 var(--spec);transition:transform .42s cubic-bezier(.34,1.36,.5,1);pointer-events:none}
+.tabbar button{position:relative;z-index:1;flex:1;display:grid;justify-items:center;align-content:center;gap:1px;font-size:10.5px;font-weight:600;color:var(--label);border-radius:27px;transition:color .25s,transform .15s}
+.tabbar button:active{transform:scale(.92)}
 .tabbar button svg{width:24px;height:24px}
-.tabbar button[aria-current="page"]{color:var(--blue);background:var(--fill)}
+.tabbar button[aria-current="page"]{color:var(--blue)}
+.tabbar button.badge::after{content:"";position:absolute;top:8px;left:calc(50% + 8px);width:9px;height:9px;border-radius:5px;background:var(--red);box-shadow:0 0 0 2px var(--card)}
+.ibtn{box-shadow:inset 0 1px 0 rgba(255,255,255,.22)}
+@supports selector(input::thumb){input.tog[switch]{appearance:auto;-webkit-appearance:auto;width:auto;height:auto;background:none;accent-color:var(--green2)}input.tog[switch]::after{display:none}}
 @media (min-width:700px){.tabbar{left:50%;right:auto;transform:translateX(-50%);width:440px;bottom:20px}}
 .toast{position:fixed;left:50%;bottom:calc(max(10px, env(safe-area-inset-bottom,0px) - 8px) + 78px);transform:translateX(-50%);z-index:60;background:var(--label);color:var(--bg);font-size:15px;font-weight:500;padding:11px 18px;border-radius:22px;box-shadow:0 8px 24px rgba(0,0,0,.18);animation:fi .2s ease;max-width:calc(100% - 40px);text-align:center}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
@@ -231,7 +262,7 @@ textarea.note{width:100%;border:0;border-radius:12px;background:var(--card);padd
 </head>
 <body>
 <main id="app" aria-live="polite"></main>
-<nav class="tabbar" aria-label="Secciones">
+<nav class="tabbar" aria-label="Secciones"><span class="tabind" aria-hidden="true"></span>
 <button data-act="tab" data-tab="resumen"><svg viewBox="0 0 28 28" fill="currentColor"><rect x="4" y="14" width="5" height="10" rx="1.6"/><rect x="11.5" y="8" width="5" height="16" rx="1.6"/><rect x="19" y="4" width="5" height="20" rx="1.6"/></svg>Resumen</button>
 <button data-act="tab" data-tab="movs"><svg viewBox="0 0 28 28" fill="currentColor"><circle cx="6" cy="7.5" r="2"/><circle cx="6" cy="14" r="2"/><circle cx="6" cy="20.5" r="2"/><rect x="10.5" y="6.3" width="14" height="2.4" rx="1.2"/><rect x="10.5" y="12.8" width="14" height="2.4" rx="1.2"/><rect x="10.5" y="19.3" width="14" height="2.4" rx="1.2"/></svg>Movimientos</button>
 <button data-act="tab" data-tab="cargar"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="14" cy="14" r="10.5"/><path d="M14 9v10M9 14h10"/></svg>Cargar</button>
@@ -695,7 +726,7 @@ const PALETTE = ['#007AFF','#FF2D55','#34C759','#FF9500','#AF52DE','#5AC8FA','#A
 const HORMIGA_CATS = ['comida','supermercado','transporte','compras','otros'];
 const { CATS, TYPES, DEF_TYPE } = L;
 
-const blank = () => ({ v: 1, accounts: [], movements: [], rules: [], statements: [], settings: { ownNames: [], hormiga: 10000, tcMode: 'cuota', theme: 'auto' } });
+const blank = () => ({ v: 1, accounts: [], movements: [], rules: [], statements: [], settings: { ownNames: [], hormiga: 10000, tcMode: 'cuota', theme: 'auto', glass: 'translucent', budgets: {}, hiddenTips: {}, remindDay: 1 } });
 let D = blank(), storageOk = true;
 try { const raw = localStorage.getItem(KEY); if (raw) D = Object.assign(blank(), JSON.parse(raw)); } catch (e) { storageOk = false; }
 D.settings = Object.assign(blank().settings, D.settings || {});
@@ -719,6 +750,7 @@ const isDark = () => D.settings.theme === 'dark' || (D.settings.theme !== 'light
 function applyTheme() {
   const t = D.settings.theme || 'auto', r = document.documentElement;
   if (t === 'auto') r.removeAttribute('data-theme'); else r.setAttribute('data-theme', t);
+  r.setAttribute('data-glass', D.settings.glass || 'translucent');
   const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', isDark() ? '#0D1320' : '#0B1D3A');
 }
 try { mqDark.addEventListener('change', () => { applyTheme(); }); } catch (e) {}
@@ -834,16 +866,92 @@ function viewResumen() {
 
   const catRows = cats.map(([c, v]) => {
     const n = st.list.filter(e => e.m.type === 'gasto' && e.m.cat === c).length;
-    return `<button class="row" data-act="gocat" data-cat="${c}">${tile(c)}<div class="main"><div class="t">${esc(CATS[c].n)}</div><div class="prog"><i style="width:${(v / cats[0][1] * 100).toFixed(1)}%;background:${CATS[c].c}"></i></div></div><div class="amt">${$$(v)}<small>${n} ${n === 1 ? 'movimiento' : 'movimientos'}</small></div>${ICON.chevS}</button>`;
+    const lim = +(D.settings.budgets || {})[c] || 0;
+    const w = lim ? Math.min(100, v / lim * 100) : v / cats[0][1] * 100;
+    const col = lim ? (v >= lim ? 'var(--red)' : v >= lim * .8 ? '#FF9500' : CATS[c].c) : CATS[c].c;
+    const small = lim ? `de ${$$(lim)}` : `${n} ${n === 1 ? 'movimiento' : 'movimientos'}`;
+    return `<button class="row" data-act="gocat" data-cat="${c}">${tile(c)}<div class="main"><div class="t">${esc(CATS[c].n)}</div><div class="prog"><i style="width:${w.toFixed(1)}%;background:${col}"></i></div></div><div class="amt">${$$(v)}<small>${small}</small></div>${ICON.chevS}</button>`;
   }).join('');
   const catCard = `<div class="card"><h2>Categorías</h2><p class="sub">Toca una para ver sus movimientos.</p><div class="list">${catRows || '<div class="row"><div class="main"><div class="s">Sin gastos este mes</div></div></div>'}</div></div>`;
 
   const interno = st.list.filter(e => e.m.type === 'interno').reduce((s, e) => s + e.amount, 0);
   const foot = interno > 0 ? `<div class="foot">No se cuentan ${$$(interno)} en movimientos internos: traspasos entre tus cuentas, pagos de tarjeta y créditos. <button data-act="gointerno">Ver cuáles</button></div>` : '';
 
-  h += hero + '<!--/HEAD-->' + pendingBanner();
+  h += hero + '<!--/HEAD-->' + pendingBanner() + tipsHTML(list, ms, st, prev, comparable);
   h += `<div class="grid"><div class="col">${stats}${catCard}${foot}</div><div class="col">${trendCard(list, ms)}${antCard(st)}${merchCard(st)}${cuotasCard()}</div></div>`;
   return h;
+}
+
+/* ----- Consejos y avisos ----- */
+function insights(list, ms, st, prev, comparable) {
+  const T = [], mes = UI.mes, B = D.settings.budgets || {};
+  const scopeAcc = acc(UI.scope), isTCscope = scopeAcc && scopeAcc.type === 'tc';
+  const pmName = prev ? mesNombre(prevMes(mes)) : '';
+  // presupuestos
+  Object.entries(B).forEach(([c, lim]) => {
+    lim = +lim; if (!lim || !CATS[c]) return; const v = st.cats[c] || 0;
+    if (v >= lim) T.push({ k: 'bud-over-' + c, tone: 'warn', ic: c, t: `Superaste tu presupuesto de ${CATS[c].n.toLowerCase()}`, d: `Llevas ${$$(v)} de ${$$(lim)}: ${$$(v - lim)} por sobre lo que te propusiste.`, act: 'gocat', arg: c, btn: 'Ver movimientos' });
+    else if (v >= lim * .8) T.push({ k: 'bud-80-' + c, tone: 'warn', ic: c, t: `Vas en el ${Math.round(v / lim * 100)} % de tu presupuesto de ${CATS[c].n.toLowerCase()}`, d: `Te quedan ${$$(lim - v)} para el resto del mes.`, act: 'gocat', arg: c, btn: 'Ver movimientos' });
+  });
+  // balance
+  if (!isTCscope && st.ingreso > 0 && st.neto < 0) T.push({ k: 'neg', tone: 'warn', ic: 'banco', t: 'Este mes salió más plata de la que entró', d: `Entraron ${$$(st.ingreso)} y salieron ${$$(st.gasto + st.ahorro)}. La diferencia, ${$$(-st.neto)}, salió de tu saldo o de crédito.` });
+  if (!isTCscope && st.ingreso > 0 && st.neto > 0) T.push({ k: 'pos', tone: 'good', ic: 'ahorro', t: `Te sobraron ${$$(st.neto)} este mes`, d: 'Si apartas una parte apenas llega el sueldo, a un fondo o una cuenta de ahorro, es más difícil que se gaste sin darte cuenta.' });
+  // alzas por categoría
+  if (prev && comparable) {
+    Object.entries(st.cats).map(([c, v]) => [c, v, v - (prev.cats[c] || 0), prev.cats[c] || 0])
+      .filter(([c, v, d, p]) => p > 0 && d > 20000 && d / p > .25 && c !== 'personas')
+      .sort((a, b) => b[2] - a[2]).slice(0, 2).forEach(([c, v, d, p]) => {
+        const top = st.list.filter(e => e.m.type === 'gasto' && e.m.cat === c && e.m.dir === 'out').sort((a, b) => b.amount - a.amount).slice(0, 2).map(e => `${e.m.name} (${$$(e.amount)})`).join(' y ');
+        T.push({ k: 'up-' + c, tone: 'info', ic: c, t: `${CATS[c].n} subió ${Math.round(d / p * 100)} % respecto de ${pmName}`, d: `Son ${$$(d)} más. Lo más grande: ${top}.`, act: 'gocat', arg: c, btn: 'Ver movimientos' });
+      });
+    Object.entries(prev.cats).filter(([c, p]) => p > 20000 && (st.cats[c] || 0) < p * .7 && c !== 'personas').sort((a, b) => (b[1] - (st.cats[b[0]] || 0)) - (a[1] - (st.cats[a[0]] || 0))).slice(0, 1).forEach(([c, p]) => {
+      T.push({ k: 'down-' + c, tone: 'good', ic: c, t: `Bajaste ${CATS[c].n.toLowerCase()} en ${$$(p - (st.cats[c] || 0))}`, d: `Respecto de ${pmName}. Si mantienes ese ritmo, son ${$$((p - (st.cats[c] || 0)) * 12)} al año.` });
+    });
+  }
+  // gastos hormiga
+  const th = +D.settings.hormiga || 10000;
+  const ants = st.list.filter(e => e.m.type === 'gasto' && e.m.dir === 'out' && e.amount <= th && HORMIGA_CATS.includes(e.m.cat));
+  const antT = ants.reduce((s, e) => s + e.amount, 0);
+  if (ants.length >= 5 && antT >= 15000) T.push({ k: 'ant', tone: 'info', ic: 'comida', t: `Tus gastos hormiga suman ${$$(antT)}`, d: `Son ${ants.length} compras pequeñas. Si las bajas a la mitad, ahorras cerca de ${$$(antT / 2 * 12)} al año.`, act: 'goant', btn: 'Ver cuáles' });
+  // cobros recurrentes
+  const keysMonths = {}; list.forEach(e => { if (e.m.type === 'gasto' && e.m.dir === 'out') { (keysMonths[e.m.key] = keysMonths[e.m.key] || new Set()).add(e.mes); } });
+  const recs = {}; st.list.forEach(e => { if (e.m.type !== 'gasto' || e.m.dir !== 'out') return; if (e.m.cat === 'suscripciones' || ((keysMonths[e.m.key] || new Set()).size >= 2 && ['cuentas', 'seguros', 'suscripciones', 'otros', 'compras'].includes(e.m.cat))) { recs[e.m.key] = recs[e.m.key] || { name: e.m.name, t: 0 }; recs[e.m.key].t += e.amount; } });
+  const rl = Object.entries(recs);
+  if (rl.length) { UI.recKeys = rl.map(r => r[0]); const tot = rl.reduce((s, r) => s + r[1].t, 0); T.push({ k: 'rec', tone: 'info', ic: 'suscripciones', t: rl.length === 1 ? `Tienes un cobro que se repite: ${rl[0][1].name}` : `Tienes ${rl.length} cobros que se repiten`, d: `Suman ${$$(tot)} al mes${rl.length > 1 ? ': ' + rl.slice(0, 3).map(r => r[1].name).join(', ') : ''}. Revisa si todavía los usas todos; cancelar uno que no usas es ahorro que se repite cada mes.`, act: 'gorec', btn: 'Ver cobros' }); }
+  // comisiones e impuestos
+  const fees = st.list.filter(e => e.m.type === 'gasto' && e.m.cat === 'banco' && e.m.dir === 'out');
+  const feeT = fees.reduce((s, e) => s + e.amount, 0);
+  if (feeT > 0) {
+    const mant = fees.some(e => /MANTENCION|COM\./i.test(e.m.desc)), timb = fees.some(e => /IMPTO|DECRETO LEY 3475/i.test(e.m.desc));
+    const tips = []; if (mant) tips.push('pregunta a tu banco por un plan sin costo de mantención o con exención por abono de sueldo'); if (timb) tips.push('el impuesto de timbres se cobra en compras en cuotas: en una sola cuota no se paga');
+    T.push({ k: 'fees', tone: 'info', ic: 'banco', t: `Pagaste ${$$(feeT)} en comisiones e impuestos`, d: tips.length ? tips.join('; ').replace(/^./, c => c.toUpperCase()) + '.' : 'Revisa con tu banco qué cobros se pueden evitar.', act: 'gocat', arg: 'banco', btn: 'Ver cobros' });
+  }
+  // comida fuera
+  const food = st.cats.comida || 0;
+  if (st.gasto > 0 && food > 40000 && food / st.gasto > .12) T.push({ k: 'food', tone: 'info', ic: 'comida', t: `Comida y café es el ${Math.round(food / st.gasto * 100)} % de tu gasto`, d: `${$$(food)} este mes. Llevar almuerzo dos días a la semana suele bajar esta categoría de forma notoria.`, act: 'gocat', arg: 'comida', btn: 'Ver movimientos' });
+  // frecuencia
+  const fr = Object.values(st.merch).filter(m => m.n >= 6 && ['supermercado', 'comida', 'compras', 'otros'].includes(m.cat)).sort((a, b) => b.n - a.n)[0];
+  if (fr) T.push({ k: 'freq', tone: 'info', ic: fr.cat, t: `Compraste ${fr.n} veces en ${fr.name}`, d: `Suman ${$$(fr.total)}. Hacer una compra planificada a la semana ayuda a evitar compras sueltas que se acumulan.` });
+  // transferencias a personas
+  const pers = st.cats.personas || 0;
+  if (st.gasto > 0 && pers / st.gasto > .35) T.push({ k: 'pers', tone: 'info', ic: 'personas', t: `Las transferencias a personas son el ${Math.round(pers / st.gasto * 100)} % de tu gasto`, d: 'Si alguna fue en realidad una compra, un pago de servicio o a una cuenta tuya, cámbiale la categoría: así el resumen muestra mejor en qué gastas.', act: 'gocat', arg: 'personas', btn: 'Revisar' });
+  // cuotas comprometidas
+  const ci = cuotasItems(); const ct = ci.reduce((s, i) => s + i.left, 0);
+  if (ct > 0) T.push({ k: 'cuotas', tone: 'info', ic: 'creditos', t: `Tienes ${$$(ct)} comprometidos en cuotas`, d: 'Antes de una compra nueva en cuotas, suma su cuota a lo que ya pagas cada mes para ver si te acomoda.' });
+  // presupuesto sugerido
+  if (!Object.keys(B).length && Object.keys(st.cats).length) {
+    const top = Object.entries(st.cats).filter(([c]) => c !== 'personas' && c !== 'hogar').sort((a, b) => b[1] - a[1])[0];
+    if (top) T.push({ k: 'setbud', tone: 'info', ic: top[0], t: 'Ponte un tope mensual', d: `Por ejemplo, en ${CATS[top[0]].n.toLowerCase()}, donde gastaste ${$$(top[1])}. Te aviso aquí cuando vayas en el 80 % y si lo superas.`, act: 'gobud', btn: 'Definir topes' });
+  }
+  const order = { warn: 0, info: 1, good: 2 };
+  const hid = D.settings.hiddenTips || {};
+  return T.filter(t => !hid[mes + '|' + UI.scope + '|' + t.k]).sort((a, b) => order[a.tone] - order[b.tone]);
+}
+function tipsHTML(list, ms, st, prev, comparable) {
+  const T = insights(list, ms, st, prev, comparable); UI.tipCount = T.filter(t => t.tone === 'warn').length;
+  if (!T.length) return '';
+  return `<div class="tips-h"><h2>Para ti</h2><span class="sub" style="margin:0">${T.length} ${T.length === 1 ? 'consejo' : 'consejos'} según tus gastos</span></div>
+  <div class="tips" role="list">${T.map(t => `<div class="tip ${t.tone}" role="listitem"><div class="tip-top">${tile(t.ic, true)}<button class="tip-x" data-act="hidetip" data-k="${t.k}" aria-label="Ocultar consejo">✕</button></div><div class="tip-t">${esc(t.t)}</div><div class="tip-d">${esc(t.d)}</div>${t.act ? `<button class="tip-b" data-act="${t.act}" ${t.arg ? `data-cat="${t.arg}"` : ''}>${esc(t.btn)}</button>` : ''}</div>`).join('')}</div>`;
 }
 
 function trendCard(list, ms) {
@@ -881,9 +989,9 @@ function merchCard(st) {
   return `<div class="card"><h2>Dónde más gastaste</h2><p class="sub">Por comercio o destinatario.</p><div class="list">${top.map(m => `<div class="row">${tile(m.cat, true)}<div class="main"><div class="t">${esc(m.name)}</div><div class="s">${esc(CATS[m.cat].n)}</div></div><div class="amt">${$$(m.total)}<small>${m.n} ${m.n === 1 ? 'vez' : 'veces'}</small></div></div>`).join('')}</div></div>`;
 }
 
-function cuotasCard() {
+function cuotasItems() {
   const tcs = D.accounts.filter(a => a.type === 'tc' && (UI.scope === 'all' || UI.scope === a.id));
-  if (!tcs.length) return '';
+  if (!tcs.length) return [];
   const items = [];
   tcs.forEach(a => {
     const st = D.statements.filter(s => s.acc === a.id).sort((x, y) => (y.date || '').localeCompare(x.date || ''))[0];
@@ -894,8 +1002,11 @@ function cuotasCard() {
       if (m.tc.kind === 'info' && of > 0 && cu) items.push({ name: m.name, left: of * cu, txt: `${of} cuotas de ${$$(cu)} · parte el próximo estado de cuenta`, cat: m.cat });
     });
   });
+  return items.sort((a, b) => b.left - a.left);
+}
+function cuotasCard() {
+  const items = cuotasItems();
   if (!items.length) return '';
-  items.sort((a, b) => b.left - a.left);
   const total = items.reduce((s, i) => s + i.left, 0);
   return `<div class="card"><h2>Cuotas por pagar</h2><p class="sub">Según el último estado de cuenta: te quedan ${$$(total)}.</p><div class="list">${items.slice(0, 6).map(i => `<div class="row">${tile(i.cat, true)}<div class="main"><div class="t">${esc(i.name)}</div><div class="s">${esc(i.txt)}</div></div><div class="amt">${$$(i.left)}<small>por pagar</small></div></div>`).join('')}</div></div>`;
 }
@@ -907,6 +1018,7 @@ function movFiltered() {
   let L2 = list.filter(e => e.mes === UI.mes);
   if (UI.fcat) L2 = L2.filter(e => e.m.cat === UI.fcat);
   if (UI.ftype === 'interno') L2 = L2.filter(e => e.m.type === 'interno');
+  if (UI.ftype === 'rec') { const ks = new Set(UI.recKeys || []); L2 = L2.filter(e => ks.has(e.m.key)); }
   if (UI.ftype === 'hormiga') { const th = +D.settings.hormiga || 10000; L2 = L2.filter(e => e.m.type === 'gasto' && e.m.dir === 'out' && e.amount <= th && HORMIGA_CATS.includes(e.m.cat)); }
   if (q) L2 = L2.filter(e => L.U(e.m.name + ' ' + e.m.desc + ' ' + (CATS[e.m.cat] || {}).n).includes(q));
   L2.sort((a, b) => b.m.date.localeCompare(a.m.date));
@@ -943,6 +1055,7 @@ function viewMovs() {
   const f = [];
   if (UI.fcat) f.push(`<button class="chip" data-act="clrf" data-f="cat">${tile(UI.fcat, true).replace('tile sm', 'tile sm" style="width:18px;height:18px;font-size:10px;border-radius:5px;background:' + CATS[UI.fcat].c + '"')} ${esc(CATS[UI.fcat].n)} ✕</button>`);
   if (UI.ftype === 'interno') f.push(`<button class="chip" data-act="clrf" data-f="type">Solo internos ✕</button>`);
+  if (UI.ftype === 'rec') f.push(`<button class="chip" data-act="clrf" data-f="type">Cobros que se repiten ✕</button>`);
   if (UI.ftype === 'hormiga') f.push(`<button class="chip" data-act="clrf" data-f="type">Gastos hormiga ✕</button>`);
   if (f.length) h += `<div class="filt">${f.join('')}</div>`;
   h += `<div id="movlist">${movListHTML()}</div>`;
@@ -959,7 +1072,7 @@ function viewCargar() {
   }
   if (I.step === 'password') {
     return h + `<div class="card"><h2>Este PDF tiene clave</h2><p class="sub">${esc(I.fileName)}</p><form data-form="pw"><div class="field"><input id="pw" type="password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Clave del PDF" aria-label="Clave del PDF" enterkeyhint="go"></div>${I.err ? `<div class="err">${esc(I.err)}</div>` : ''}
-    <div class="list" style="margin:14px -16px 0;border-radius:0"><label class="row"><div class="main"><div class="t">Recordar clave en este equipo</div><div class="s" style="white-space:normal">La próxima vez se abre sola. No se incluye en el respaldo.</div></div><input type="checkbox" class="tog" data-in="remember" ${I.remember !== false ? 'checked' : ''}></label></div>
+    <div class="list" style="margin:14px -16px 0;border-radius:0"><label class="row"><div class="main"><div class="t">Recordar clave en este equipo</div><div class="s" style="white-space:normal">La próxima vez se abre sola. No se incluye en el respaldo.</div></div><input type="checkbox" class="tog" switch data-in="remember" ${I.remember !== false ? 'checked' : ''}></label></div>
     <div class="btns"><button class="btn" type="submit">Abrir</button></div></form></div>`;
   }
   if (I.step === 'reading') return h + `<div class="card empty"><div class="spin"></div><p>Leyendo ${esc(I.fileName)}…</p></div>`;
@@ -985,7 +1098,7 @@ function viewCargar() {
   const rows = newRows.map((r, i) => {
     const amt = r.tc && r.tc.kind === 'info' ? `<small>${r.tc.of || ''} cuotas</small>` : (r.tc && r.tc.of > 1 ? `<small>cuota ${r.tc.n} de ${r.tc.of}</small>` : '');
     const cls = r.type === 'interno' ? 'mute' : (r.dir === 'in' ? 'in' : '');
-    return `<div class="row"><input type="checkbox" class="tog" style="transform:scale(.78);margin:0 -6px" data-in="sel" data-i="${r.i}" ${r.sel ? 'checked' : ''} aria-label="Incluir"><button class="main" style="text-align:left" data-act="editimp" data-i="${r.i}"><div class="t">${esc(r.name)}</div><div class="catpill"><i style="background:${CATS[r.cat].c}"></i>${esc(CATS[r.cat].n)} · ${fechaCorta(r.date)}${r.tc && r.tc.kind === 'info' ? ' · aún no cobrada' : ''}</div></button><div class="amt ${cls}">${r.dir === 'in' ? '+' : '−'}$${miles(r.amount)}${amt}</div></div>`;
+    return `<div class="row"><input type="checkbox" class="tog" switch style="transform:scale(.78);margin:0 -6px" data-in="sel" data-i="${r.i}" ${r.sel ? 'checked' : ''} aria-label="Incluir"><button class="main" style="text-align:left" data-act="editimp" data-i="${r.i}"><div class="t">${esc(r.name)}</div><div class="catpill"><i style="background:${CATS[r.cat].c}"></i>${esc(CATS[r.cat].n)} · ${fechaCorta(r.date)}${r.tc && r.tc.kind === 'info' ? ' · aún no cobrada' : ''}</div></button><div class="amt ${cls}">${r.dir === 'in' ? '+' : '−'}$${miles(r.amount)}${amt}</div></div>`;
   }).join('');
   h += `<div class="grid"><div class="col"><div class="card"><h2>${esc(R.accountLabel || R.bank)}</h2>${R.kind === 'generic' ? '<p class="sub" style="margin:2px 0 4px">Lector general</p>' : ''}<p class="sub">${esc(per)} · ${I.rows.length} movimientos leídos</p>${accBlock}</div>
     <div class="card"><h2>Revisión</h2>${checks}${dupN ? `<div class="check"><span class="ok">↺</span><div>${dupN} ${dupN === 1 ? 'movimiento ya estaba cargado' : 'movimientos ya estaban cargados'} y no se vuelve${dupN === 1 ? '' : 'n'} a sumar.</div></div>` : ''}</div>
@@ -1007,7 +1120,10 @@ function viewAjustes() {
   const th = D.settings.theme || 'auto';
   return topBar('Ajustes') + '<!--/HEAD-->' + pendingBanner() + `
   <div class="grid"><div class="col">
-  <div class="card"><h2>Apariencia</h2><p class="sub">Automático sigue la configuración de tu iPhone.</p><div class="seg" role="group" aria-label="Apariencia"><button data-act="settheme" data-v="auto" aria-pressed="${th === 'auto'}">Automático</button><button data-act="settheme" data-v="light" aria-pressed="${th === 'light'}">Claro</button><button data-act="settheme" data-v="dark" aria-pressed="${th === 'dark'}">Oscuro</button></div></div>
+  <div class="card"><h2>Apariencia</h2><p class="sub">Automático sigue la configuración de tu iPhone.</p><div class="seg" role="group" aria-label="Apariencia"><button data-act="settheme" data-v="auto" aria-pressed="${th === 'auto'}">Automático</button><button data-act="settheme" data-v="light" aria-pressed="${th === 'light'}">Claro</button><button data-act="settheme" data-v="dark" aria-pressed="${th === 'dark'}">Oscuro</button></div>
+  <div class="lbl2" style="margin-top:16px">Barras de vidrio</div><div class="seg" role="group" aria-label="Estilo del vidrio"><button data-act="setglass" data-v="translucent" aria-pressed="${(D.settings.glass || 'translucent') === 'translucent'}">Translúcido</button><button data-act="setglass" data-v="tinted" aria-pressed="${D.settings.glass === 'tinted'}">Tintado</button></div><p class="foot" style="padding:8px 2px 0">Tintado da más contraste, como la opción equivalente de iOS 27.</p></div>
+  ${budgetsCard()}
+  <div class="card"><h2>Recordatorio mensual</h2><p class="sub">Agrega a tu calendario un aviso cada mes para cargar la cartola. Llega como notificación del iPhone, aunque no abras la app.</p><div class="field" style="margin-bottom:12px"><span style="color:var(--label2);white-space:nowrap">Día del mes</span><input data-in="rday" inputmode="numeric" value="${D.settings.remindDay || 1}" aria-label="Día del mes" style="text-align:right"></div><div class="btns"><button class="btn sec" data-act="remind">Agregar al calendario</button></div></div>
   <div class="card"><h2>Cuentas y tarjetas</h2><p class="sub">Se crean solas al cargar la primera cartola de cada una.</p><div class="list">${accRows}<button class="row" data-act="addacc"><span class="tile sm" style="background:var(--fill);color:var(--blue);font-size:20px">+</span><div class="main"><div class="t" style="color:var(--blue)">Agregar cuenta a mano</div></div></button></div></div>
   <div class="card"><h2>Tus nombres</h2><p class="sub">Las transferencias a estos nombres se tratan como movimiento interno (de una cuenta tuya a otra) y no se suman como gasto.</p><div class="chips" style="margin:0 0 12px">${own || '<span class="foot" style="padding:0">Aún no hay nombres.</span>'}</div><form data-form="own" class="field"><input id="ownIn" placeholder="Ej.: tu nombre como aparece en transferencias" aria-label="Agregar nombre" autocomplete="off"><button class="link" type="submit">Agregar</button></form></div>
   <div class="card"><h2>Gastos hormiga</h2><p class="sub">Monto máximo para considerar una compra como gasto hormiga.</p><div class="field"><span style="color:var(--label2)">$</span><input data-in="hormiga" inputmode="numeric" value="${miles(D.settings.hormiga)}" aria-label="Umbral de gastos hormiga"></div></div>
@@ -1017,9 +1133,27 @@ function viewAjustes() {
   <div class="card"><h2>Lo que la app aprendió</h2><p class="sub">${D.rules.length ? `${D.rules.length} ${D.rules.length === 1 ? 'regla' : 'reglas'} creadas a partir de tus correcciones.` : 'Cuando cambies la categoría de un comercio, aparecerá aquí.'}</p>${rules ? `<div class="list">${rules}</div>` : ''}</div>
   ${standalone ? '' : `<div class="card"><h2>Instalar como app</h2><p class="sub" style="margin:0">${isIOS ? 'En Safari toca Compartir y luego Agregar a inicio. Así se abre a pantalla completa, funciona sin conexión y tus datos quedan bien guardados.' : 'En Chrome o Edge usa el ícono Instalar de la barra de direcciones (o el menú ⋮ → Instalar). Funciona sin conexión.'}</p></div>`}
   <div class="card"><h2>Borrar todo</h2><p class="sub">Elimina cuentas, movimientos y reglas de este equipo. Exporta un respaldo antes si quieres conservarlos.</p><div class="btns"><button class="btn danger" data-act="wipe">Borrar todos los datos</button></div></div>
-  <div class="foot" style="text-align:center">Finanzas · versión 1.1.0</div>
+  <div class="foot" style="text-align:center">Finanzas · versión 1.2.0</div>
   ${storageOk ? '' : '<div class="card"><p class="sub" style="color:var(--red);margin:0">Este navegador no permite guardar datos. Lo que cargues se perderá al cerrar.</p></div>'}
   </div></div>`;
+}
+
+function budgetsCard() {
+  const B = D.settings.budgets || {};
+  const spent = {}; D.movements.forEach(m => { if (m.type === 'gasto' && m.dir === 'out') spent[m.cat] = (spent[m.cat] || 0) + m.amount; });
+  const exp = Object.keys(CATS).filter(c => !DEF_TYPE[c]);
+  let cats = exp.filter(c => spent[c] || B[c]).sort((a, b) => (spent[b] || 0) - (spent[a] || 0));
+  const more = !UI.allBud && cats.length < exp.length;
+  if (UI.allBud || !cats.length) cats = cats.concat(exp.filter(c => !cats.includes(c)));
+  return `<div class="card" id="budgets"><h2>Presupuestos mensuales</h2><p class="sub">Pon un tope por categoría. En el resumen verás cuánto llevas y te aviso al 80 % y si lo superas.</p><div class="list">${cats.map(c => `<label class="row">${tile(c, true)}<div class="main"><div class="t">${esc(CATS[c].n)}</div></div><span style="color:var(--label2)">$</span><input class="budin" data-in="bud" data-cat="${c}" inputmode="numeric" placeholder="Sin tope" value="${B[c] ? miles(B[c]) : ''}" aria-label="Tope de ${esc(CATS[c].n)}"></label>`).join('')}</div>${more ? '<div class="btns" style="justify-items:start;margin-top:10px"><button class="link" data-act="allbud">Mostrar todas las categorías</button></div>' : ''}</div>`;
+}
+function calendarReminder() {
+  const day = Math.min(28, Math.max(1, +D.settings.remindDay || 1));
+  const now = new Date(); let y = now.getFullYear(), m = now.getMonth() + 1; if (now.getDate() >= day) { m++; if (m > 12) { m = 1; y++; } }
+  const dt = `${y}${String(m).padStart(2, '0')}${String(day).padStart(2, '0')}`;
+  const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Finanzas//ES', 'CALSCALE:GREGORIAN', 'BEGIN:VEVENT', 'UID:finanzas-cartola-' + Date.now() + '@finanzas', 'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z', `DTSTART:${dt}T090000`, `DTEND:${dt}T091500`, `RRULE:FREQ=MONTHLY;BYMONTHDAY=${day}`, 'SUMMARY:Cargar cartola en Finanzas', 'DESCRIPTION:Descarga la cartola del mes de tu banco y cárgala en la app Finanzas.', 'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Cargar cartola en Finanzas', 'TRIGGER:PT0M', 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+  try { const u = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' })); const a = document.createElement('a'); a.href = u; a.download = 'recordatorio-finanzas.ics'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 8000); toast('Abre el archivo y toca Agregar al calendario'); }
+  catch (e) { toast('No se pudo crear el recordatorio'); }
 }
 
 /* ----- Hojas ----- */
@@ -1038,7 +1172,7 @@ function sheetHTML() {
       <div class="seg" style="margin-bottom:10px" role="group" aria-label="Sentido"><button data-act="ddir" data-v="out" aria-pressed="${dr.dir === 'out'}">Cargo (−)</button><button data-act="ddir" data-v="in" aria-pressed="${dr.dir === 'in'}">Abono (+)</button></div>
       <div class="seg" style="margin-bottom:14px" role="group" aria-label="Tipo">${Object.entries(TYPES).map(([k, v]) => `<button data-act="dtype" data-v="${k}" aria-pressed="${dr.type === k}">${v}</button>`).join('')}</div>
       <div class="cats">${Object.entries(CATS).map(([k, c]) => `<button data-act="dcat" data-v="${k}" aria-pressed="${dr.cat === k}">${tile(k, true)}<span>${esc(c.n)}</span></button>`).join('')}</div>
-      <div class="list" style="margin-top:14px"><label class="row"><div class="main"><div class="t" style="white-space:normal">Aplicar a todos los de este comercio</div><div class="s" style="white-space:normal">${sameN > 1 ? `${sameN} movimientos de ${esc(src.name)}, y los que cargues después` : `También a los que cargues después`}</div></div><input type="checkbox" class="tog" data-in="dall" ${dr.all ? 'checked' : ''}></label></div>
+      <div class="list" style="margin-top:14px"><label class="row"><div class="main"><div class="t" style="white-space:normal">Aplicar a todos los de este comercio</div><div class="s" style="white-space:normal">${sameN > 1 ? `${sameN} movimientos de ${esc(src.name)}, y los que cargues después` : `También a los que cargues después`}</div></div><input type="checkbox" class="tog" switch data-in="dall" ${dr.all ? 'checked' : ''}></label></div>
       ${S.src === 'mov' ? `<div class="lbl2">Nota</div><textarea class="note" data-in="dnote" placeholder="Opcional">${esc(dr.note || '')}</textarea><div class="btns"><button class="btn danger" data-act="delmov">Eliminar movimiento</button></div>` : ''}`;
   } else if (S.kind === 'acc') {
     const a = acc(S.id); if (!a) return '';
@@ -1063,12 +1197,32 @@ function render() {
   const v = { resumen: viewResumen, movs: viewMovs, cargar: viewCargar, ajustes: viewAjustes }[UI.tab];
   const html = v(); const k = html.indexOf('<!--/HEAD-->');
   const head = k >= 0 ? html.slice(0, k) : html, body = k >= 0 ? html.slice(k + 12) : '';
-  app.innerHTML = `<header class="band"><div class="band-in">${head}</div></header><div class="page"><div class="wrap">${body}</div></div>`;
-  countUp();
+  const titles = { resumen: 'Resumen', movs: 'Movimientos', cargar: 'Cargar', ajustes: 'Ajustes' };
+  const sub = (UI.tab === 'resumen' || UI.tab === 'movs') && UI.mes ? mesLabel(UI.mes) : '';
+  app.innerHTML = `<div class="minibar" data-act="totop" aria-hidden="true"><span class="mt">${titles[UI.tab]}</span>${sub ? `<span class="ms">${sub}</span>` : ''}</div><header class="band"><div class="band-in">${head}</div></header><div class="page"><div class="wrap">${body}</div></div>`;
+  countUp(); onScroll();
+  const tabs = [...document.querySelectorAll('.tabbar button')], ix = tabs.findIndex(b => b.dataset.tab === UI.tab);
+  const ind = document.querySelector('.tabind'); if (ind) ind.style.transform = `translateX(${Math.max(0, ix) * 100}%)`;
+  const rb = document.querySelector('.tabbar [data-tab=resumen]'); if (rb) rb.classList.toggle('badge', UI.tab !== 'resumen' && (UI.tipCount || 0) > 0);
   document.querySelectorAll('.tabbar button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === UI.tab ? 'page' : 'false'));
   renderSheet();
   const pw = document.getElementById('pw'); if (pw) pw.focus();
 }
+function onScroll() {
+  const mb = document.querySelector('.minibar'), band = document.querySelector('.band'); if (!mb || !band) return;
+  const show = window.scrollY > band.offsetHeight - 70;
+  mb.classList.toggle('on', show);
+}
+window.addEventListener('scroll', onScroll, { passive: true });
+// deslizar en la banda para cambiar de mes
+let sw = null;
+document.addEventListener('touchstart', e => { const b = e.target.closest('.band'); if (!b || e.target.closest('.scopes,.seg,.search,input,.storage')) { sw = null; return; } const t = e.touches[0]; sw = { x: t.clientX, y: t.clientY, t: Date.now() }; }, { passive: true });
+document.addEventListener('touchend', e => {
+  if (!sw) return; const t = e.changedTouches[0], dx = t.clientX - sw.x, dy = t.clientY - sw.y, dt = Date.now() - sw.t; sw = null;
+  if (Math.abs(dx) < 60 || Math.abs(dy) > 40 || dt > 700 || !(UI.tab === 'resumen' || UI.tab === 'movs')) return;
+  const ms = monthsOf(eff()), i = ms.indexOf(UI.mes) + (dx < 0 ? 1 : -1);
+  if (ms[i]) { UI.mes = ms[i]; render(); const m = document.querySelector('.monthbar .m'); if (m) { m.classList.add(dx < 0 ? 'in-r' : 'in-l'); } }
+}, { passive: true });
 let lastHero = null;
 function countUp() {
   const el = document.querySelector('.hero .big[data-v]'); if (!el) return;
@@ -1227,6 +1381,13 @@ const A = {
   tcmode: el => { D.settings.tcMode = el.dataset.v; save(); render(); },
   gocat: el => { UI.fcat = el.dataset.cat; UI.ftype = null; UI.q = ''; go('movs'); },
   gointerno: () => { UI.fcat = null; UI.ftype = 'interno'; UI.q = ''; go('movs'); },
+  hidetip: el => { const k = UI.mes + '|' + UI.scope + '|' + el.dataset.k; D.settings.hiddenTips = D.settings.hiddenTips || {}; D.settings.hiddenTips[k] = 1; save(); render(); toast('Consejo oculto este mes'); },
+  gorec: () => { UI.fcat = null; UI.ftype = 'rec'; UI.q = ''; go('movs'); },
+  gobud: () => { go('ajustes'); setTimeout(() => { const b = document.getElementById('budgets'); if (b) b.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60); },
+  setglass: el => { D.settings.glass = el.dataset.v; save(); applyTheme(); render(); },
+  remind: () => calendarReminder(),
+  allbud: () => { UI.allBud = true; render(); setTimeout(() => { const b = document.getElementById('budgets'); if (b) b.scrollIntoView({ block: 'start' }); }, 30); },
+  totop: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
   goant: () => { UI.fcat = null; UI.ftype = 'hormiga'; UI.q = ''; go('movs'); },
   clrf: el => { if (el.dataset.f === 'cat') UI.fcat = null; else UI.ftype = null; render(); },
   pick: () => pdfInput.click(),
@@ -1292,6 +1453,8 @@ document.addEventListener('input', e => {
   if (k === 'newname') UI.imp.newName = t.value;
   if (k === 'dnote') UI.sheet.draft.note = t.value;
   if (k === 'hormiga') { const v = parseInt(t.value.replace(/\D/g, '') || '0', 10); D.settings.hormiga = v || 10000; save(); }
+  if (k === 'bud') { const v = parseInt(t.value.replace(/\D/g, '') || '0', 10); D.settings.budgets = D.settings.budgets || {}; if (v) D.settings.budgets[t.dataset.cat] = v; else delete D.settings.budgets[t.dataset.cat]; save(); }
+  if (k === 'rday') { const v = parseInt(t.value.replace(/\D/g, '') || '1', 10); D.settings.remindDay = Math.min(28, Math.max(1, v)); save(); }
 });
 document.addEventListener('change', e => {
   const t = e.target, k = t.dataset.in; if (!k) return;
@@ -1300,6 +1463,8 @@ document.addEventListener('change', e => {
   if (k === 'remember') UI.imp.remember = t.checked;
   if (k === 'accsel') { UI.imp.accId = t.value === '__new' ? null : t.value; markDups(); render(); }
   if (k === 'hormiga') { t.value = miles(D.settings.hormiga); render(); }
+  if (k === 'bud') { const v = (D.settings.budgets || {})[t.dataset.cat]; t.value = v ? miles(v) : ''; if (v) toast('Tope guardado'); }
+  if (k === 'rday') t.value = D.settings.remindDay;
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && UI.sheet) { UI.sheet = null; renderSheet(); } });
 // arrastrar y soltar en escritorio

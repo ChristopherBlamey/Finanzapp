@@ -30,6 +30,7 @@ Ajustes → **Exportar respaldo** en un equipo, y **Importar respaldo** en el ot
 
 ## Historial
 
+- **1.2.0:** consejos personalizados según tus gastos, presupuestos por categoría con avisos, recordatorio mensual en el calendario, vidrio translúcido o tintado, barra compacta al hacer scroll, deslizar para cambiar de mes e ícono nuevo.
 - **1.1.0:** diseño para iPhone que usa la zona de la isla dinámica, modo claro y oscuro desde la app, botón de guardar siempre visible y aviso cuando hay una cartola leída sin guardar.
 - **1.0.2:** el lector de PDF va incluido dentro de `index.html` (ya no se usa la carpeta `vendor/`), lector general mejorado para cualquier banco con validación de totales y saldos, y opción de invertir cargos y abonos.
 - **1.0.1:** lector de PDF compatible con Safari en iPhone, claves de PDF que se pueden recordar en el equipo y detalle técnico cuando un archivo no se puede abrir.
