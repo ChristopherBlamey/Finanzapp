@@ -30,6 +30,7 @@ Ajustes → **Exportar respaldo** en un equipo, y **Importar respaldo** en el ot
 
 ## Historial
 
+- **1.3.0:** base de datos local IndexedDB (con copia de respaldo), vista de cartolas guardadas con detalle y eliminación, exportación a Excel (CSV), el resumen y los movimientos muestran siempre lo guardado (incluidos internos y cuotas sin cobrar) y diagnóstico ampliado.
 - **1.2.1:** guardado verificado, la revisión de una cartola sobrevive si iOS recarga la app, lector de PDF en proceso aparte (menos memoria), registro de errores y diagnóstico en Ajustes.
 - **1.2.0:** consejos personalizados según tus gastos, presupuestos por categoría con avisos, recordatorio mensual en el calendario, vidrio translúcido o tintado, barra compacta al hacer scroll, deslizar para cambiar de mes e ícono nuevo.
 - **1.1.0:** diseño para iPhone que usa la zona de la isla dinámica, modo claro y oscuro desde la app, botón de guardar siempre visible y aviso cuando hay una cartola leída sin guardar.

@@ -730,10 +730,58 @@ const blank = () => ({ v: 1, accounts: [], movements: [], rules: [], statements:
 let D = blank(), storageOk = true;
 try { const raw = localStorage.getItem(KEY); if (raw) D = Object.assign(blank(), JSON.parse(raw)); } catch (e) { storageOk = false; }
 D.settings = Object.assign(blank().settings, D.settings || {});
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify(D)); storageOk = true; } catch (e) { storageOk = false; toast('No se pudo guardar en este equipo'); } };
+/* ---------- base de datos local (IndexedDB) con copia en localStorage ---------- */
+const IDB = { db: null, ok: false, n: 0 };
+const STORES = ['cuentas', 'cartolas', 'movimientos', 'reglas', 'ajustes'];
+function idbOpen() {
+  return new Promise((res, rej) => {
+    if (!window.indexedDB) return rej(new Error('IndexedDB no disponible'));
+    const r = indexedDB.open('finanzas', 1);
+    r.onupgradeneeded = () => { const db = r.result; [['cuentas', 'id'], ['cartolas', 'id'], ['movimientos', 'id'], ['reglas', 'key']].forEach(([n, k]) => { if (!db.objectStoreNames.contains(n)) db.createObjectStore(n, { keyPath: k }); }); if (!db.objectStoreNames.contains('ajustes')) db.createObjectStore('ajustes'); };
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); r.onblocked = () => rej(new Error('IndexedDB bloqueada'));
+  });
+}
+function idbAll(n) { return new Promise((res, rej) => { const q = IDB.db.transaction(n).objectStore(n).getAll(); q.onsuccess = () => res(q.result || []); q.onerror = () => rej(q.error); }); }
+function idbGet(n, k) { return new Promise(res => { const q = IDB.db.transaction(n).objectStore(n).get(k); q.onsuccess = () => res(q.result); q.onerror = () => res(null); }); }
+function idbWrite() {
+  if (!IDB.db) return Promise.resolve(false);
+  return new Promise(res => {
+    try {
+      const tx = IDB.db.transaction(STORES, 'readwrite');
+      const put = (n, arr) => { const st = tx.objectStore(n); st.clear(); arr.forEach(x => st.put(JSON.parse(JSON.stringify(x)))); };
+      put('cuentas', D.accounts); put('cartolas', D.statements); put('movimientos', D.movements); put('reglas', D.rules);
+      tx.objectStore('ajustes').put(JSON.parse(JSON.stringify(D.settings)), 'settings'); tx.objectStore('ajustes').put({ savedAt: D.savedAt || Date.now(), v: 1 }, 'meta');
+      tx.oncomplete = () => { IDB.ok = true; IDB.n = D.movements.length; res(true); };
+      tx.onerror = () => { logErr('idb', tx.error); IDB.ok = false; res(false); };
+    } catch (e) { logErr('idb', e); res(false); }
+  });
+}
+let idbT;
+const save = () => {
+  D.savedAt = Date.now();
+  let lsOk = false;
+  try { localStorage.setItem(KEY, JSON.stringify(D)); lsOk = true; } catch (e) { logErr('localStorage', e); }
+  clearTimeout(idbT); idbT = setTimeout(idbWrite, 30);
+  storageOk = lsOk || IDB.ok;
+  if (!storageOk) toast('No se pudo guardar en este equipo');
+};
+async function idbBoot() {
+  try {
+    IDB.db = await idbOpen();
+    const meta = await idbGet('ajustes', 'meta');
+    if (meta && meta.savedAt > (D.savedAt || 0)) {
+      const [acs, sts, mvs, rls, set] = await Promise.all([idbAll('cuentas'), idbAll('cartolas'), idbAll('movimientos'), idbAll('reglas'), idbGet('ajustes', 'settings')]);
+      D = Object.assign(blank(), { accounts: acs, statements: sts, movements: mvs, rules: rls, savedAt: meta.savedAt });
+      D.settings = Object.assign(blank().settings, set || {});
+      try { localStorage.setItem(KEY, JSON.stringify(D)); } catch (e) {}
+      IDB.ok = true; IDB.n = mvs.length; applyTheme(); render();
+    } else if (D.movements.length || D.accounts.length) { await idbWrite(); }
+    else IDB.ok = true;
+  } catch (e) { logErr('idb-abrir', e); }
+}
 try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
 
-const VERSION = '1.2.1';
+const VERSION = '1.3.0';
 const LOGK = 'finanzas-log', PEND = 'finanzas-pendiente';
 function logErr(where, e) {
   try { const l = JSON.parse(localStorage.getItem(LOGK) || '[]'); l.unshift({ t: new Date().toISOString(), v: VERSION, w: where, m: String(e && (e.stack || e.message) || e).slice(0, 400) }); localStorage.setItem(LOGK, JSON.stringify(l.slice(0, 8))); } catch (x) {}
@@ -803,7 +851,8 @@ function toast(msg) { clearTimeout(toastT); let t = document.querySelector('.toa
 /* ---------- datos derivados ---------- */
 const tcMode = () => D.settings.tcMode || 'cuota';
 const eff = () => L.effective(D, UI.scope, tcMode());
-function monthsOf(list) { return [...new Set(list.filter(e => e.m.type !== 'interno').map(e => e.mes))].sort(); }
+function infoRows() { return tcMode() === 'cuota' ? D.movements.filter(m => m.tc && m.tc.kind === 'info' && (UI.scope === 'all' || m.acc === UI.scope)) : []; }
+function monthsOf(list) { const st = new Set(list.map(e => e.mes)); infoRows().forEach(m => st.add(m.date.slice(0, 7))); return [...st].filter(Boolean).sort(); }
 function ensureMes(list) { const ms = monthsOf(list); if (!ms.length) { UI.mes = null; return ms; } if (!UI.mes || !ms.includes(UI.mes)) UI.mes = ms[ms.length - 1]; return ms; }
 
 /* ---------- vistas ---------- */
@@ -892,11 +941,20 @@ function viewResumen() {
   const interno = st.list.filter(e => e.m.type === 'interno').reduce((s, e) => s + e.amount, 0);
   const foot = interno > 0 ? `<div class="foot">No se cuentan ${$$(interno)} en movimientos internos: traspasos entre tus cuentas, pagos de tarjeta y créditos. <button data-act="gointerno">Ver cuáles</button></div>` : '';
 
-  h += hero + '<!--/HEAD-->' + pendingBanner() + tipsHTML(list, ms, st, prev, comparable);
+  h += hero + '<!--/HEAD-->' + pendingBanner() + zeroCard(st) + tipsHTML(list, ms, st, prev, comparable);
   h += `<div class="grid"><div class="col">${stats}${catCard}${foot}</div><div class="col">${trendCard(list, ms)}${antCard(st)}${merchCard(st)}${cuotasCard()}</div></div>`;
   return h;
 }
 
+function zeroCard(st) {
+  if (st.gasto || st.ingreso || st.ahorro) return '';
+  const nInt = st.list.filter(e => e.m.type === 'interno').length;
+  const nInfo = infoRows().filter(m => m.date.slice(0, 7) === UI.mes).length;
+  const parts = [];
+  if (nInt) parts.push(`${nInt} ${nInt === 1 ? 'movimiento interno' : 'movimientos internos'} (pagos de tarjeta, traspasos o créditos), que no se cuentan como gasto`);
+  if (nInfo) parts.push(`${nInfo} ${nInfo === 1 ? 'compra en cuotas que aún no se cobra' : 'compras en cuotas que aún no se cobran'}; aparecen en "Compra total" o cuando llegue su primera cuota`);
+  return `<div class="card pend" style="box-shadow:inset 0 0 0 1.5px #FF9500"><div><b>Tus movimientos están guardados, pero este mes no hay gastos que sumar.</b><div class="sub" style="margin:4px 0 0">${parts.length ? 'Este mes tiene ' + esc(parts.join(', y ')) + '.' : 'Revisa los movimientos de este mes.'}</div></div><button class="btn" style="width:auto;height:42px;font-size:15px;padding:0 16px;flex:none" data-act="tab" data-tab="movs">Ver movimientos</button></div>`;
+}
 /* ----- Consejos y avisos ----- */
 function insights(list, ms, st, prev, comparable) {
   const T = [], mes = UI.mes, B = D.settings.budgets || {};
@@ -1030,7 +1088,9 @@ function cuotasCard() {
 function movFiltered() {
   const list = eff(); const ms = ensureMes(list);
   const q = L.U(UI.q.trim());
-  let L2 = list.filter(e => e.mes === UI.mes);
+  let L2;
+  if (UI.fstmt) L2 = D.movements.filter(m => m.stmt === UI.fstmt).map(m => ({ m, amount: m.amount, mes: m.date.slice(0, 7) }));
+  else L2 = list.filter(e => e.mes === UI.mes).concat(infoRows().filter(m => m.date.slice(0, 7) === UI.mes).map(m => ({ m, amount: m.amount, mes: m.date.slice(0, 7) })));
   if (UI.fcat) L2 = L2.filter(e => e.m.cat === UI.fcat);
   if (UI.ftype === 'interno') L2 = L2.filter(e => e.m.type === 'interno');
   if (UI.ftype === 'rec') { const ks = new Set(UI.recKeys || []); L2 = L2.filter(e => ks.has(e.m.key)); }
@@ -1070,6 +1130,7 @@ function viewMovs() {
   const f = [];
   if (UI.fcat) f.push(`<button class="chip" data-act="clrf" data-f="cat">${tile(UI.fcat, true).replace('tile sm', 'tile sm" style="width:18px;height:18px;font-size:10px;border-radius:5px;background:' + CATS[UI.fcat].c + '"')} ${esc(CATS[UI.fcat].n)} ✕</button>`);
   if (UI.ftype === 'interno') f.push(`<button class="chip" data-act="clrf" data-f="type">Solo internos ✕</button>`);
+  if (UI.fstmt) { const stt = D.statements.find(x => x.id === UI.fstmt); f.push(`<button class="chip" data-act="clrf" data-f="stmt">Cartola: ${esc(stmtLabel(stt))} ✕</button>`); }
   if (UI.ftype === 'rec') f.push(`<button class="chip" data-act="clrf" data-f="type">Cobros que se repiten ✕</button>`);
   if (UI.ftype === 'hormiga') f.push(`<button class="chip" data-act="clrf" data-f="type">Gastos hormiga ✕</button>`);
   if (f.length) h += `<div class="filt">${f.join('')}</div>`;
@@ -1143,7 +1204,8 @@ function viewAjustes() {
   <div class="card"><h2>Tus nombres</h2><p class="sub">Las transferencias a estos nombres se tratan como movimiento interno (de una cuenta tuya a otra) y no se suman como gasto.</p><div class="chips" style="margin:0 0 12px">${own || '<span class="foot" style="padding:0">Aún no hay nombres.</span>'}</div><form data-form="own" class="field"><input id="ownIn" placeholder="Ej.: tu nombre como aparece en transferencias" aria-label="Agregar nombre" autocomplete="off"><button class="link" type="submit">Agregar</button></form></div>
   <div class="card"><h2>Gastos hormiga</h2><p class="sub">Monto máximo para considerar una compra como gasto hormiga.</p><div class="field"><span style="color:var(--label2)">$</span><input data-in="hormiga" inputmode="numeric" value="${miles(D.settings.hormiga)}" aria-label="Umbral de gastos hormiga"></div></div>
   </div><div class="col">
-  <div class="card"><h2>Respaldo</h2><p class="sub">Tus datos viven solo en este navegador. Exporta un respaldo para no perderlos o para pasarlos a otro equipo (por ejemplo, por iCloud Drive). Al importar se combinan sin duplicar.</p><div class="btns"><button class="btn" data-act="export">Exportar respaldo</button><button class="btn sec" data-act="import">Importar respaldo</button></div></div>
+  ${stmtsCard()}
+  <div class="card"><h2>Respaldo</h2><p class="sub">Tus datos viven solo en este navegador. Exporta un respaldo para no perderlos o para pasarlos a otro equipo (por ejemplo, por iCloud Drive). Al importar se combinan sin duplicar.</p><div class="btns"><button class="btn" data-act="export">Exportar respaldo</button><button class="btn sec" data-act="import">Importar respaldo</button><button class="btn sec" data-act="csv">Exportar movimientos a Excel (CSV)</button></div></div>
   ${(() => { const ks = getKeys(); return `<div class="card"><h2>Claves de PDF guardadas</h2><p class="sub">${ks.length ? 'Se prueban solas al abrir una cartola con clave. Quedan solo en este equipo y no van en el respaldo.' : 'Cuando abras una cartola con clave y elijas recordarla, aparecerá aquí.'}</p>${ks.length ? `<div class="list">${ks.map((k, i) => `<div class="row"><span class="tile sm" style="background:var(--fill);font-size:14px">🔑</span><div class="main"><div class="t">${esc(k.label)}</div><div class="s">••••••</div></div><button class="link" style="font-size:15px" data-act="rmkey" data-i="${i}">Quitar</button></div>`).join('')}</div>` : ''}</div>`; })()}
   <div class="card"><h2>Lo que la app aprendió</h2><p class="sub">${D.rules.length ? `${D.rules.length} ${D.rules.length === 1 ? 'regla' : 'reglas'} creadas a partir de tus correcciones.` : 'Cuando cambies la categoría de un comercio, aparecerá aquí.'}</p>${rules ? `<div class="list">${rules}</div>` : ''}</div>
   ${standalone ? '' : `<div class="card"><h2>Instalar como app</h2><p class="sub" style="margin:0">${isIOS ? 'En Safari toca Compartir y luego Agregar a inicio. Así se abre a pantalla completa, funciona sin conexión y tus datos quedan bien guardados.' : 'En Chrome o Edge usa el ícono Instalar de la barra de direcciones (o el menú ⋮ → Instalar). Funciona sin conexión.'}</p></div>`}
@@ -1154,10 +1216,30 @@ function viewAjustes() {
   </div></div>`;
 }
 
+function stmtLabel(st) {
+  if (!st) return 'Cartola'; const a = acc(st.acc);
+  const per = st.from && st.to ? `${fechaCorta(st.from)} – ${fechaCorta(st.to)}` : st.date ? fechaCorta(st.date) : '';
+  return `${a ? a.name : 'Cuenta'}${per ? ', ' + per : ''}`;
+}
+function stmtsCard() {
+  const sts = D.statements.slice().sort((x, y) => (y.date || '').localeCompare(x.date || ''));
+  const rows = sts.map(st => {
+    const ms = D.movements.filter(m => m.stmt === st.id), a = acc(st.acc);
+    const out = ms.filter(m => m.dir === 'out' && !(m.tc && m.tc.kind === 'info')).reduce((t, m) => t + m.amount, 0), inn = ms.filter(m => m.dir === 'in').reduce((t, m) => t + m.amount, 0);
+    return `<button class="row" data-act="stmtsheet" data-id="${esc(st.id)}"><span class="tile sm" style="background:${a ? a.color : '#8E8E93'};font-size:14px">📄</span><div class="main"><div class="t">${esc(a ? a.name : 'Cuenta eliminada')}</div><div class="s">${esc(st.from && st.to ? fechaCorta(st.from) + ' – ' + fechaCorta(st.to) : st.date ? fechaCorta(st.date) : 'Sin fecha')}</div></div><div class="amt">${ms.length}<small>movimientos</small></div>${ICON.chevS}</button>`;
+  }).join('');
+  return `<div class="card"><h2>Cartolas guardadas</h2><p class="sub">${sts.length ? `${sts.length} ${sts.length === 1 ? 'cartola' : 'cartolas'} y ${D.movements.length} movimientos en la base de datos de este equipo.` : 'Aún no hay cartolas guardadas.'}</p>${rows ? `<div class="list">${rows}</div>` : ''}</div>`;
+}
 function diagText() {
   let log = []; try { log = JSON.parse(localStorage.getItem(LOGK) || '[]'); } catch (e) {}
   let size = 0; try { size = (localStorage.getItem(KEY) || '').length; } catch (e) {}
-  return [`Finanzas ${VERSION}`, `Modo app: ${standalone ? 'sí' : 'no'} · ${navigator.userAgent}`, `Cuentas: ${D.accounts.length} · Movimientos: ${D.movements.length} · Datos: ${Math.round(size / 1024)} KB · Lector PDF: ${window.pdfjsLib ? 'ok' : 'no'} · Worker: ${window.__pdfwMode || '-'}`]
+  const byType = {}; D.movements.forEach(m => { const k = m.type + (m.tc && m.tc.kind === 'info' ? '/cuotas-sin-cobrar' : ''); byType[k] = (byType[k] || 0) + 1; });
+  const months = [...new Set(D.movements.map(m => m.date.slice(0, 7)))].sort();
+  return [`Finanzas ${VERSION}`, `Modo app: ${standalone ? 'sí' : 'no'} · ${navigator.userAgent}`, `Cuentas: ${D.accounts.length} · Movimientos: ${D.movements.length} · Datos: ${Math.round(size / 1024)} KB · Lector PDF: ${window.pdfjsLib ? 'ok' : 'no'} · Worker: ${window.__pdfwMode || '-'}`,
+    `Base de datos: ${IDB.db ? 'IndexedDB ' + (IDB.ok ? 'ok' : 'con error') + ' (' + IDB.n + ' mov.)' : 'no disponible'} · Vista tarjetas: ${tcMode()} · Alcance: ${UI.scope}`,
+    `Cuentas: ${D.accounts.map(a => a.name + ' [' + a.type + ']').join('; ') || '-'}`, `Por tipo: ${JSON.stringify(byType)} · Meses: ${months.join(', ') || '-'}`,
+    `Cartolas: ${D.statements.map(st => st.id + ' (' + D.movements.filter(m => m.stmt === st.id).length + ')').join('; ') || '-'}`,
+    `Muestra: ${D.movements.slice(0, 5).map(m => m.date + ' ' + m.dir + ' ' + m.amount + ' ' + m.type + '/' + m.cat + ' ' + (m.desc || '').slice(0, 30)).join(' | ')}`]
     .concat(log.map(l => `${l.t} [${l.v}] ${l.w}: ${l.m}`)).join('\n');
 }
 function diagCard() {
@@ -1211,6 +1293,22 @@ function sheetHTML() {
       <div class="lbl2">Nombre</div><div class="field" style="background:var(--card)"><input id="naName" placeholder="Ej.: BancoEstado Cuenta RUT" aria-label="Nombre"></div>
       <div class="lbl2">Tipo</div><div class="seg"><button data-act="natype" data-v="cc" aria-pressed="${S.type !== 'tc'}">Cuenta</button><button data-act="natype" data-v="tc" aria-pressed="${S.type === 'tc'}">Tarjeta de crédito</button></div>
       <div class="foot" style="margin-top:12px">Al cargar una cartola de un banco sin lector a medida podrás elegir esta cuenta.</div>`;
+  } else if (S.kind === 'stmt') {
+    const st = D.statements.find(x => x.id === S.id); if (!st) return '';
+    const ms = D.movements.filter(m => m.stmt === st.id);
+    const cnt = t => ms.filter(m => m.type === t).length;
+    const info = ms.filter(m => m.tc && m.tc.kind === 'info').length;
+    const out = ms.filter(m => m.dir === 'out' && !(m.tc && m.tc.kind === 'info')).reduce((t, m) => t + m.amount, 0), inn = ms.filter(m => m.dir === 'in').reduce((t, m) => t + m.amount, 0);
+    body = `<div class="sheet-h"><button class="link" data-act="close">Cerrar</button><h3>Cartola</h3><span style="width:60px"></span></div>
+      <div class="card"><h2 style="font-size:17px">${esc(stmtLabel(st))}</h2><p class="sub" style="margin:4px 0 10px">Guardada el ${fechaCorta(new Date(st.at || Date.now()).toISOString().slice(0, 10))}</p>
+      <div class="list" style="margin:0 -16px -16px">
+        <div class="row"><div class="main"><div class="t">Movimientos</div></div><div class="amt">${ms.length}</div></div>
+        <div class="row"><div class="main"><div class="t">Cargos</div></div><div class="amt">${$$(out)}</div></div>
+        <div class="row"><div class="main"><div class="t">Abonos</div></div><div class="amt in">${$$(inn)}</div></div>
+        <div class="row"><div class="main"><div class="t">Gastos · Ingresos · Ahorro · Internos</div></div><div class="amt">${cnt('gasto')} · ${cnt('ingreso')} · ${cnt('ahorro')} · ${cnt('interno')}</div></div>
+        ${info ? `<div class="row"><div class="main"><div class="t">Compras en cuotas aún no cobradas</div></div><div class="amt">${info}</div></div>` : ''}
+      </div></div>
+      <div class="btns" style="margin-top:16px"><button class="btn" data-act="stmtview" data-id="${esc(st.id)}">Ver sus movimientos</button><button class="btn danger" data-act="stmtdel" data-id="${esc(st.id)}">Eliminar esta cartola</button></div>`;
   } else if (S.kind === 'confirm') {
     body = `<div class="sheet-h"><span></span><h3>${esc(S.title)}</h3><span></span></div><p class="sub" style="text-align:center;color:var(--label2);margin:0 0 18px">${esc(S.text)}</p><div class="btns"><button class="btn" style="background:var(--red)" data-act="confirmok">${esc(S.ok)}</button><button class="btn sec" data-act="close">Cancelar</button></div>`;
   }
@@ -1368,9 +1466,11 @@ function impSave() {
       D.movements.push(m); n++;
     });
     if (!D.statements.find(s => s.id === stId)) D.statements.push({ id: stId, acc: a.id, from: R.period ? R.period.from : null, to: R.period ? R.period.to : null, date: R.statementDate || (R.period && R.period.to) || null, at: now });
-    localStorage.setItem(KEY, JSON.stringify(D));
-    const check = JSON.parse(localStorage.getItem(KEY) || '{}');
-    if (!check.movements || check.movements.length !== D.movements.length) throw new Error('La verificación de guardado no coincide');
+    D.savedAt = Date.now();
+    let lsOk = false;
+    try { localStorage.setItem(KEY, JSON.stringify(D)); const check = JSON.parse(localStorage.getItem(KEY) || '{}'); lsOk = !!check.movements && check.movements.length === D.movements.length; } catch (e) { logErr('localStorage', e); }
+    idbWrite().then(ok => { if (!ok && !lsOk) toast('Atención: no se pudo confirmar el guardado'); });
+    if (!lsOk && !IDB.db) throw new Error('Este navegador no permite guardar datos');
     storageOk = true;
     mes = mesFact || (R.period ? R.period.to.slice(0, 7) : (I.rows[0] && I.rows[0].date.slice(0, 7)));
   } catch (e) {
@@ -1393,6 +1493,17 @@ function learn(key, label, cat, type) {
 }
 
 /* ---------- respaldo ---------- */
+async function shareFile(fname, data, mime) {
+  if (DL) { try { await DL.save({ filename: fname, data }); return true; } catch (e) { if (e && e.code === 'declined') return false; } }
+  try { const file = new File([data], fname, { type: mime }); if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: fname }); return true; } } catch (e) { if (e && e.name === 'AbortError') return false; }
+  try { const u = URL.createObjectURL(new Blob([data], { type: mime })); const a = document.createElement('a'); a.href = u; a.download = fname; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); return true; } catch (e) { toast('Este navegador no permite exportar archivos'); return false; }
+}
+function exportCSV() {
+  const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const rows = [['Fecha', 'Cuenta', 'Comercio', 'Detalle del banco', 'Categoría', 'Tipo', 'Cargo', 'Abono', 'Cuota', 'Nota'].map(q).join(';')];
+  D.movements.slice().sort((a, b) => a.date.localeCompare(b.date)).forEach(m => { const a = acc(m.acc); rows.push([m.date, a ? a.name : '', m.name, m.desc, (CATS[m.cat] || CATS.otros).n, TYPES[m.type] || m.type, m.dir === 'out' ? m.amount : '', m.dir === 'in' ? m.amount : '', m.tc && m.tc.of ? (m.tc.kind === 'info' ? `${m.tc.of} cuotas (sin cobrar)` : `${m.tc.n}/${m.tc.of}`) : '', m.note || ''].map(q).join(';')); });
+  shareFile('finanzas-movimientos.csv', '\ufeff' + rows.join('\r\n'), 'text/csv').then(ok => ok && toast('Movimientos exportados'));
+}
 async function exportBackup() {
   const d = new Date(); const fname = `finanzas-respaldo-${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}.json`;
   const data = JSON.stringify(D);
@@ -1442,9 +1553,13 @@ const A = {
   allbud: () => { UI.allBud = true; render(); setTimeout(() => { const b = document.getElementById('budgets'); if (b) b.scrollIntoView({ block: 'start' }); }, 30); },
   copydiag: async () => { const t = diagText(); try { await navigator.clipboard.writeText(t); toast('Diagnóstico copiado'); } catch (e) { UI.sheet = { kind: 'confirm', title: 'Diagnóstico', text: t, ok: 'Cerrar', run: () => {} }; renderSheet(); } },
   cleardiag: () => { try { localStorage.removeItem(LOGK); } catch (e) {} render(); },
+  stmtsheet: el => { UI.sheet = { kind: 'stmt', id: el.dataset.id }; renderSheet(); },
+  stmtview: el => { UI.sheet = null; renderSheet(); UI.fstmt = el.dataset.id; UI.fcat = null; UI.ftype = null; UI.q = ''; const st = D.statements.find(x => x.id === UI.fstmt); if (st) UI.scope = st.acc; go('movs'); },
+  stmtdel: el => { const id = el.dataset.id; UI.sheet = { kind: 'confirm', title: 'Eliminar cartola', text: 'Se borrarán sus movimientos del resumen. Puedes volver a cargarla cuando quieras.', ok: 'Eliminar', run: () => { D.movements = D.movements.filter(m => m.stmt !== id); D.statements = D.statements.filter(x => x.id !== id); if (UI.fstmt === id) UI.fstmt = null; save(); toast('Cartola eliminada'); } }; renderSheet(); },
+  csv: () => exportCSV(),
   totop: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
   goant: () => { UI.fcat = null; UI.ftype = 'hormiga'; UI.q = ''; go('movs'); },
-  clrf: el => { if (el.dataset.f === 'cat') UI.fcat = null; else UI.ftype = null; render(); },
+  clrf: el => { if (el.dataset.f === 'cat') UI.fcat = null; else if (el.dataset.f === 'stmt') UI.fstmt = null; else UI.ftype = null; render(); },
   pick: () => pdfInput.click(),
   askpw: () => { UI.imp.step = 'password'; UI.imp.err = ''; render(); },
   rmkey: el => { const k = getKeys(); k.splice(+el.dataset.i, 1); setKeys(k); render(); toast('Clave eliminada'); },
@@ -1533,7 +1648,8 @@ const h0 = location.hash.slice(1);
 if (['resumen', 'movs', 'cargar', 'ajustes'].includes(h0)) UI.tab = h0;
 const pend = loadPending(); if (pend) { UI.imp = pend; markDups(); if (UI.tab === 'cargar' || !D.movements.length) UI.tab = 'cargar'; }
 render();
-window.__fin = { D: () => D, UI, startBytes: (name, bytes) => { UI.imp = { step: 'reading', fileName: name, bytes }; go('cargar'); return openPdf(); }, pw: v => openPdf(v) };
+idbBoot();
+window.__fin = { idb: () => IDB, D: () => D, UI, startBytes: (name, bytes) => { UI.imp = { step: 'reading', fileName: name, bytes }; go('cargar'); return openPdf(); }, pw: v => openPdf(v) };
 })();
 
 </script>
