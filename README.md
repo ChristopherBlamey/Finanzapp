@@ -7,7 +7,7 @@ App web para cargar cartolas bancarias en PDF y ver en qué se gasta. Funciona e
 ## Publicar en GitHub Pages (gratis)
 
 1. En GitHub, crea un repositorio nuevo, por ejemplo `finanzas`.
-2. Sube todo el contenido de esta carpeta a la raíz del repositorio (`index.html`, `sw.js`, `manifest.webmanifest`, `icons/` y `vendor/`).
+2. Sube todo el contenido de esta carpeta a la raíz del repositorio (`index.html`, `sw.js`, `manifest.webmanifest` y la carpeta `icons/`).
 3. En el repositorio, entra a **Settings → Pages**. En *Source* elige **Deploy from a branch**, rama `main`, carpeta `/ (root)`, y guarda.
 4. En uno o dos minutos la app queda en `https://TU-USUARIO.github.io/finanzas/`.
 
@@ -30,4 +30,5 @@ Ajustes → **Exportar respaldo** en un equipo, y **Importar respaldo** en el ot
 
 ## Historial
 
+- **1.0.2:** el lector de PDF va incluido dentro de `index.html` (ya no se usa la carpeta `vendor/`), lector general mejorado para cualquier banco con validación de totales y saldos, y opción de invertir cargos y abonos.
 - **1.0.1:** lector de PDF compatible con Safari en iPhone, claves de PDF que se pueden recordar en el equipo y detalle técnico cuando un archivo no se puede abrir.
