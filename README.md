@@ -27,3 +27,7 @@ Reemplaza `index.html` en el repositorio y cambia `VERSION` en `sw.js` (por ejem
 ## Pasar datos entre equipos
 
 Ajustes → **Exportar respaldo** en un equipo, y **Importar respaldo** en el otro. La importación combina sin duplicar.
+
+## Historial
+
+- **1.0.1:** lector de PDF compatible con Safari en iPhone, claves de PDF que se pueden recordar en el equipo y detalle técnico cuando un archivo no se puede abrir.

@@ -562,6 +562,10 @@ D.settings = Object.assign(blank().settings, D.settings || {});
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(D)); storageOk = true; } catch (e) { storageOk = false; toast('No se pudo guardar en este equipo'); } };
 try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
 
+const KEYS = 'finanzas-claves';
+const getKeys = () => { try { return JSON.parse(localStorage.getItem(KEYS) || '[]'); } catch (e) { return []; } };
+const setKeys = k => { try { localStorage.setItem(KEYS, JSON.stringify(k)); } catch (e) {} };
+function rememberKey(label, pw) { const k = getKeys(); const ex = k.find(x => x.pw === pw); if (ex) { if (label && !ex.label) ex.label = label; } else k.push({ label: label || 'Cartola', pw }); setKeys(k); }
 const UI = { tab: 'resumen', scope: 'all', mes: null, q: '', fcat: null, ftype: null, imp: null, sheet: null };
 let DL = null;
 try { window.claude && window.claude.use && window.claude.use('downloads').then(d => { DL = d; }).catch(() => {}); } catch (e) {}
@@ -784,10 +788,12 @@ function viewCargar() {
     <div class="foot" style="margin-top:12px">Santander (cuenta corriente y tarjeta de crédito) tiene lector a medida y se valida contra los totales del banco. Otros bancos usan un lector general: revisa montos y signos antes de guardar.<br><br>El archivo se abre y se analiza en este equipo. Nada se envía a internet.</div>`;
   }
   if (I.step === 'password') {
-    return h + `<div class="card"><h2>Este PDF tiene clave</h2><p class="sub">${esc(I.fileName)}</p><form data-form="pw"><div class="field"><input id="pw" type="password" autocomplete="off" placeholder="Clave del PDF" aria-label="Clave del PDF" enterkeyhint="go"></div>${I.err ? `<div class="err">${esc(I.err)}</div>` : ''}<div class="btns"><button class="btn" type="submit">Abrir</button></div></form><div class="foot" style="margin-top:12px">La clave se usa solo para abrir el archivo y no se guarda.</div></div>`;
+    return h + `<div class="card"><h2>Este PDF tiene clave</h2><p class="sub">${esc(I.fileName)}</p><form data-form="pw"><div class="field"><input id="pw" type="password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Clave del PDF" aria-label="Clave del PDF" enterkeyhint="go"></div>${I.err ? `<div class="err">${esc(I.err)}</div>` : ''}
+    <div class="list" style="margin:14px -16px 0;border-radius:0"><label class="row"><div class="main"><div class="t">Recordar clave en este equipo</div><div class="s" style="white-space:normal">La próxima vez se abre sola. No se incluye en el respaldo.</div></div><input type="checkbox" class="tog" data-in="remember" ${I.remember !== false ? 'checked' : ''}></label></div>
+    <div class="btns"><button class="btn" type="submit">Abrir</button></div></form></div>`;
   }
   if (I.step === 'reading') return h + `<div class="card empty"><div class="spin"></div><p>Leyendo ${esc(I.fileName)}…</p></div>`;
-  if (I.step === 'error') return h + `<div class="card"><h2>No se pudo leer el archivo</h2><p class="sub">${esc(I.err)}</p><div class="btns"><button class="btn" data-act="pick">Elegir otro archivo</button></div></div>`;
+  if (I.step === 'error') return h + `<div class="card"><h2>No se pudo leer el archivo</h2><p class="sub">${esc(I.err)}</p><div class="btns">${I.bytes ? '<button class="btn" data-act="askpw">Ingresar clave</button>' : ''}<button class="btn ${I.bytes ? 'sec' : ''}" data-act="pick">Elegir otro archivo</button></div>${I.tech ? `<div class="foot" style="margin-top:14px;font-size:12px">Detalle técnico (para soporte): ${esc(I.tech)}</div>` : ''}</div>`;
   // revisión
   const R = I.res;
   const existing = acc(I.accId);
@@ -834,9 +840,11 @@ function viewAjustes() {
   <div class="card"><h2>Gastos hormiga</h2><p class="sub">Monto máximo para considerar una compra como gasto hormiga.</p><div class="field"><span style="color:var(--label2)">$</span><input data-in="hormiga" inputmode="numeric" value="${miles(D.settings.hormiga)}" aria-label="Umbral de gastos hormiga"></div></div>
   </div><div class="col">
   <div class="card"><h2>Respaldo</h2><p class="sub">Tus datos viven solo en este navegador. Exporta un respaldo para no perderlos o para pasarlos a otro equipo (por ejemplo, por iCloud Drive). Al importar se combinan sin duplicar.</p><div class="btns"><button class="btn" data-act="export">Exportar respaldo</button><button class="btn sec" data-act="import">Importar respaldo</button></div></div>
+  ${(() => { const ks = getKeys(); return `<div class="card"><h2>Claves de PDF guardadas</h2><p class="sub">${ks.length ? 'Se prueban solas al abrir una cartola con clave. Quedan solo en este equipo y no van en el respaldo.' : 'Cuando abras una cartola con clave y elijas recordarla, aparecerá aquí.'}</p>${ks.length ? `<div class="list">${ks.map((k, i) => `<div class="row"><span class="tile sm" style="background:var(--fill);font-size:14px">🔑</span><div class="main"><div class="t">${esc(k.label)}</div><div class="s">••••••</div></div><button class="link" style="font-size:15px" data-act="rmkey" data-i="${i}">Quitar</button></div>`).join('')}</div>` : ''}</div>`; })()}
   <div class="card"><h2>Lo que la app aprendió</h2><p class="sub">${D.rules.length ? `${D.rules.length} ${D.rules.length === 1 ? 'regla' : 'reglas'} creadas a partir de tus correcciones.` : 'Cuando cambies la categoría de un comercio, aparecerá aquí.'}</p>${rules ? `<div class="list">${rules}</div>` : ''}</div>
   ${standalone ? '' : `<div class="card"><h2>Instalar como app</h2><p class="sub" style="margin:0">${isIOS ? 'En Safari toca Compartir y luego Agregar a inicio. Así se abre a pantalla completa, funciona sin conexión y tus datos quedan bien guardados.' : 'En Chrome o Edge usa el ícono Instalar de la barra de direcciones (o el menú ⋮ → Instalar). Funciona sin conexión.'}</p></div>`}
   <div class="card"><h2>Borrar todo</h2><p class="sub">Elimina cuentas, movimientos y reglas de este equipo. Exporta un respaldo antes si quieres conservarlos.</p><div class="btns"><button class="btn danger" data-act="wipe">Borrar todos los datos</button></div></div>
+  <div class="foot" style="text-align:center">Finanzas · versión 1.0.1</div>
   ${storageOk ? '' : '<div class="card"><p class="sub" style="color:var(--red);margin:0">Este navegador no permite guardar datos. Lo que cargues se perderá al cerrar.</p></div>'}
   </div></div>`;
 }
@@ -892,33 +900,56 @@ const pdfInput = document.getElementById('pdfIn'), jsonInput = document.getEleme
 pdfInput.addEventListener('change', () => { const f = pdfInput.files[0]; pdfInput.value = ''; if (f) startFile(f); });
 async function startFile(f) {
   if (!/pdf$/i.test(f.type) && !/\.pdf$/i.test(f.name)) { UI.imp = { step: 'error', err: 'El archivo no es un PDF.' }; go('cargar'); return; }
-  const buf = new Uint8Array(await f.arrayBuffer());
-  UI.imp = { step: 'reading', fileName: f.name, bytes: buf };
+  let buf;
+  try { buf = new Uint8Array(await f.arrayBuffer()); }
+  catch (e) { UI.imp = { step: 'error', fileName: f.name, err: 'No se pudo leer el archivo desde el teléfono. Si está en iCloud, ábrelo una vez en Archivos para que se descargue y vuelve a intentarlo.', tech: techOf(e) }; go('cargar'); return; }
+  UI.imp = { step: 'reading', fileName: f.name, bytes: buf, remember: true };
   go('cargar');
   openPdf();
 }
+const isPwErr = e => !!e && (e.name === 'PasswordException' || /password/i.test(e.message || ''));
+const techOf = e => (e && e.name ? e.name : 'Error') + ': ' + (e && e.message ? e.message : String(e));
+function tryOpen(bytes, pw) {
+  return pdfjsLib.getDocument({ data: bytes.slice(), password: pw, isEvalSupported: false, disableFontFace: true, useSystemFonts: false, stopAtErrors: false }).promise;
+}
+function failPdf(e) {
+  const I = UI.imp; I.step = 'error';
+  I.err = 'El lector no pudo abrir este PDF. Si tiene clave, intenta ingresarla manualmente.';
+  I.tech = techOf(e); render();
+}
 async function openPdf(password) {
   const I = UI.imp;
-  if (!window.pdfjsLib) { I.step = 'error'; I.err = 'No se pudo cargar el lector de PDF. Revisa tu conexión y vuelve a abrir la app.'; render(); return; }
+  if (!window.pdfjsLib) { I.step = 'error'; I.err = 'No se cargó el lector de PDF. Cierra la app por completo y vuelve a abrirla con conexión.'; I.tech = 'pdfjsLib no disponible'; render(); return; }
+  let doc = null, used = password;
+  try { doc = await tryOpen(I.bytes, password); }
+  catch (e) {
+    if (!isPwErr(e)) { failPdf(e); return; }
+    if (password === undefined) {
+      for (const k of getKeys()) {
+        try { doc = await tryOpen(I.bytes, k.pw); used = k.pw; I.savedHit = true; break; }
+        catch (e2) { if (!isPwErr(e2)) { failPdf(e2); return; } }
+      }
+    }
+    if (!doc) { I.step = 'password'; I.err = password !== undefined ? 'Clave incorrecta. Inténtalo de nuevo.' : ''; render(); return; }
+  }
   try {
-    const doc = await pdfjsLib.getDocument({ data: I.bytes.slice(), password, isEvalSupported: false, disableFontFace: true, useSystemFonts: false }).promise;
     const pages = [];
     for (let p = 1; p <= doc.numPages; p++) {
       const page = await doc.getPage(p); const vp = page.getViewport({ scale: 1 }); const tc = await page.getTextContent();
       pages.push({ width: vp.width, items: tc.items.map(i => ({ str: i.str, x: i.transform[4], y: i.transform[5], w: i.width })) });
     }
-    doc.destroy();
+    try { doc.destroy(); } catch (e) {}
+    I.pwUsed = used;
     analyze(pages);
-  } catch (e) {
-    if (e && e.name === 'PasswordException') { I.step = 'password'; I.err = e.code === 2 ? 'Clave incorrecta. Inténtalo de nuevo.' : ''; render(); return; }
-    I.step = 'error'; I.err = 'El archivo parece dañado o no tiene texto legible (por ejemplo, si es una foto escaneada).'; render();
-  }
+  } catch (e) { failPdf(e); }
 }
 function analyze(pages) {
   const I = UI.imp; I.bytes = null;
   const res = P.detect(pages);
   if (!res.rows.length) { I.step = 'error'; I.err = 'No encontré movimientos en este PDF. Si es de otro banco, envíaselo a quien mantiene la app para agregar su lector.'; render(); return; }
   if (res.owner) { const parts = res.owner.trim().split(/\s+/); if (parts.length >= 2) { const guess = `${parts[0]} ${parts[1]}`.toLowerCase().replace(/(^|\s)\S/g, s => s.toUpperCase()); if (!D.settings.ownNames.some(n => L.U(n) === L.U(guess))) { D.settings.ownNames.push(guess); save(); } } }
+  if (I.pwUsed && I.remember && !I.savedHit) rememberKey(res.kind === 'generic' ? I.fileName : res.accountLabel, I.pwUsed);
+  I.pwUsed = null;
   I.res = res; I.step = 'review';
   const exist = res.accountKey ? D.accounts.find(a => a.key === res.accountKey) : null;
   I.accId = exist ? exist.id : (res.kind === 'generic' && D.accounts.length ? D.accounts[0].id : null);
@@ -1010,6 +1041,8 @@ const A = {
   goant: () => { UI.fcat = null; UI.ftype = 'hormiga'; UI.q = ''; go('movs'); },
   clrf: el => { if (el.dataset.f === 'cat') UI.fcat = null; else UI.ftype = null; render(); },
   pick: () => pdfInput.click(),
+  askpw: () => { UI.imp.step = 'password'; UI.imp.err = ''; render(); },
+  rmkey: el => { const k = getKeys(); k.splice(+el.dataset.i, 1); setKeys(k); render(); toast('Clave eliminada'); },
   impcancel: () => { UI.imp = null; render(); },
   newtype: el => { UI.imp.newType = el.dataset.v; render(); },
   impsave: () => impSave(),
@@ -1032,7 +1065,7 @@ const A = {
   rmrule: el => { D.rules = D.rules.filter(r => r.key !== el.dataset.k); save(); render(); toast('Regla quitada'); },
   export: () => exportBackup(),
   import: () => jsonInput.click(),
-  wipe: () => { UI.sheet = { kind: 'confirm', title: 'Borrar todos los datos', text: 'Se eliminarán cuentas, movimientos y reglas de este equipo. No se puede deshacer.', ok: 'Borrar todo', run: () => { D = blank(); save(); UI.scope = 'all'; UI.mes = null; } }; renderSheet(); },
+  wipe: () => { UI.sheet = { kind: 'confirm', title: 'Borrar todos los datos', text: 'Se eliminarán cuentas, movimientos, reglas y claves guardadas de este equipo. No se puede deshacer.', ok: 'Borrar todo', run: () => { D = blank(); save(); setKeys([]); UI.scope = 'all'; UI.mes = null; } }; renderSheet(); },
 };
 function saveEdit() {
   const S = UI.sheet, d = S.draft;
@@ -1073,6 +1106,7 @@ document.addEventListener('change', e => {
   const t = e.target, k = t.dataset.in; if (!k) return;
   if (k === 'sel') { const r = UI.imp.rows.find(x => x.i === +t.dataset.i); r.sel = t.checked; render(); }
   if (k === 'dall') UI.sheet.draft.all = t.checked;
+  if (k === 'remember') UI.imp.remember = t.checked;
   if (k === 'accsel') { UI.imp.accId = t.value === '__new' ? null : t.value; markDups(); render(); }
   if (k === 'hormiga') { t.value = miles(D.settings.hormiga); render(); }
 });

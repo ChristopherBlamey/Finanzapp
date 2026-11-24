@@ -1,6 +1,6 @@
 /* Finanzas · service worker: guarda la app para usarla sin conexión.
    Cambia VERSION cada vez que subas una versión nueva de index.html. */
-const VERSION = 'finanzas-1.0.0';
+const VERSION = 'finanzas-1.0.1';
 const FILES = ['./', './index.html', './manifest.webmanifest', './vendor/pdf.min.js', './vendor/pdf.worker.min.js',
   './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png'];
 
