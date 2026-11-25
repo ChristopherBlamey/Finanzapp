@@ -547,12 +547,14 @@ const P = (() => {
   }
   function generic(pages) {
     const T = U(fullText(pages)), C = T.replace(/\s+/g, '');
-    const isTC = /TARJETA DE CREDITO|CUPO TOTAL|MONTO FACTURADO|ESTADO DE CUENTA (EN MONEDA NACIONAL )?DE TARJETA/.test(T) && !/SALDOS DIARIOS|SALDO INICIAL|DETALLE DE MOVIMIENTOS DE (LA )?CUENTA/.test(T);
+    const top = U(pages[0] ? groupLines(pages[0].items).slice(0, 25).map(l => l.text).join(' ') : '');
+    const isCC = /CARTOLA|CUENTA CORRIENTE|CUENTA VISTA|CUENTA ?RUT|CUENTA DE AHORRO|CHEQUERA ELECTRONICA/.test(top);
+    const isTC = !isCC && /TARJETA DE CREDITO|CUPO TOTAL|MONTO FACTURADO|ESTADO DE CUENTA (EN MONEDA NACIONAL )?DE TARJETA/.test(T) && !/SALDOS DIARIOS|SALDO INICIAL|DETALLE DE MOVIMIENTOS DE (LA )?CUENTA/.test(T);
     const C1 = U(pages[0] ? pages[0].items.map(i => i.str).join(' ') : '').replace(/\s+/g, '');
     let bk = null, bi = 1e9;
     BANKS.forEach(b => { const i = C1.indexOf(b[0].replace(/\s+/g, '')); if (i >= 0 && i < bi) { bi = i; bk = b; } });
     const out = { bank: bk ? bk[1] : 'Otro banco', kind: 'generic', rows: [], checks: [], accountType: isTC ? 'tc' : 'cc' };
-    const allDates = (T.match(/\b\d{2}\/\d{2}\/\d{4}\b/g) || []).map(dmy).filter(Boolean).sort();
+    const allDates = (T.match(/\b\d{2}[\/\-]\d{2}[\/\-]\d{4}\b/g) || []).map(x => dmy(x.replace(/-/g, '/'))).filter(Boolean).sort();
     const toDate = allDates.length ? allDates[allDates.length - 1] : null;
     const yTo = toDate ? +toDate.slice(0, 4) : new Date().getFullYear(), mTo = toDate ? +toDate.slice(5, 7) : 12;
     let cols = null, prevSaldo = null;
@@ -562,11 +564,32 @@ const P = (() => {
     pages.forEach(pg => {
       const W = pg.width || 600;
       const lines = groupLines(pg.items);
+      // banda de encabezado: elementos a la altura de "FECHA" (acepta títulos en dos líneas)
+      const fe = pg.items.find(i => /^FECHA( (DE )?(OPERACION|MOVIMIENTO|TRANSACCION|CONTABLE))?$/.test(U(i.str).trim()));
+      if (fe) {
+        const band = pg.items.filter(i => Math.abs(i.y - fe.y) <= 13 && i.str.trim());
+        const bh = re => band.filter(i => re.test(U(i.str).trim()));
+        const cen = arr => arr.length ? arr.reduce((t, i) => t + center(i), 0) / arr.length : null;
+        const cO = cen(bh(/CARGO|DEBITO|GIRO|RETIRO|EGRESO/)), cI = cen(bh(/ABONO|DEPOSITO|INGRESO|^CREDITOS?$/)), cS = cen(bh(/^SALDO( DIARIO| CONTABLE| DISPONIBLE| FINAL)?$/).length ? bh(/^SALDO( DIARIO| CONTABLE| DISPONIBLE| FINAL)?$/) : bh(/SALDO/).filter(i => !/SALDOS DIARIOS/.test(U(i.str)))), cM = cen(bh(/^(MONTO|IMPORTE|VALOR)\b/));
+        const cD = cen(bh(/DESCRIPCI|DETALLE|GLOSA|CONCEPTO|MOVIMIENTO|DESCRIPTION/));
+        const others = band.filter(i => /SUCURSAL|OFICINA|DOCUMENTO|N[°º]|OPERACION|CANAL|REFERENCIA|SERIE|LUGAR|CIUDAD/.test(U(i.str)) && !/DESCRIPCI|DETALLE/.test(U(i.str)));
+        if ((cO != null && cI != null) || cM != null) {
+          cols = cO != null && cI != null ? { out: cO, in: cI, saldo: cS, monto: null, cuota: null } : { out: null, in: null, saldo: cS, monto: cM, cuota: null };
+          cols.textCols = cD != null ? [{ k: 'desc', x: cD }].concat(others.map(o => ({ k: 'otro', x: center(o) }))) : null;
+          cols.headY = fe.y;
+        }
+      }
+      if (cols && cols.textCols) {
+        const tc = Object.fromEntries(cols.textCols.map((t, k) => [t.k + k, t.x])), cl = [];
+        lines.forEach(ln => { if (!ln.items[0] || !parseDate(ln.items[0].str)) return; ln.items.slice(1).forEach(it => { if (AMT_RE.test(it.str.trim())) return; let c = cl.find(c => Math.abs(c.x - it.x) <= 6); if (!c) { c = { x: it.x, sum: 0, n: 0 }; cl.push(c); } c.sum += center(it); c.n++; }); });
+        cl.forEach(c => { c.k = nearest(c.sum / c.n, tc); });
+        cols.colOf = it => { const c = cl.find(c => Math.abs(c.x - it.x) <= 6); return c ? c.k : nearest(center(it), tc); };
+      }
       const hdr = re => pg.items.find(i => re.test(U(i.str).trim()));
-      const hO = hdr(/^(CARGOS?|DEBITOS?|GIROS?|CHEQUES Y OTROS CARGOS|CARGOS \(\$\)|MONTO CARGO)$/), hI = hdr(/^(ABONOS?|CREDITOS?|DEPOSITOS?|DEPOSITOS Y OTROS ABONOS|ABONOS \(\$\)|MONTO ABONO)$/);
+      const hO = (cols && cols.headY != null) ? null : hdr(/^(CARGOS?|DEBITOS?|GIROS?|CHEQUES Y OTROS CARGOS|CARGOS \(\$\)|MONTO CARGO)$/), hI = hdr(/^(ABONOS?|CREDITOS?|DEPOSITOS?|DEPOSITOS Y OTROS ABONOS|ABONOS \(\$\)|MONTO ABONO)$/);
       const hS = hdr(/^SALDO$/) || hdr(/^SALDOS?( DIARIOS?| CONTABLE| DISPONIBLE)?$/), hM = hdr(/^(MONTO|IMPORTE|VALOR)( \(\$\))?$/), hV = hdr(/^(VALOR CUOTA|CUOTA MENSUAL|MONTO CUOTA)$/);
       if (hO && hI) cols = { out: center(hO), in: center(hI), saldo: hS ? center(hS) : null, monto: null, cuota: null };
-      else if (hM) cols = { out: null, in: null, saldo: hS ? center(hS) : null, monto: center(hM), cuota: hV ? center(hV) : null };
+      else if (hM && !(cols && cols.headY != null)) cols = { out: null, in: null, saldo: hS ? center(hS) : null, monto: center(hM), cuota: hV ? center(hV) : null };
       let stopPg = false;
       lines.forEach(ln => {
         const TL = U(ln.text);
@@ -588,9 +611,11 @@ const P = (() => {
         const amts = ln.items.filter(i => i !== dIt && i !== cuIt && i.x > W * 0.35 && AMT_RE.test(i.str.trim()) && !/%/.test(i.str) && !parseDate(i.str));
         if (!amts.length) return;
         const firstAmtX = Math.min(...amts.map(a => a.x));
-        let desc = ln.items.filter(i => i !== cuIt && !amts.includes(i) && i.x < firstAmtX).map(i => i === dIt ? i.str.trim().slice(dt.len) : i.str).join(' ').trim()
+        let descIts = ln.items.filter(i => i !== cuIt && !amts.includes(i) && i.x < firstAmtX);
+        if (cols && cols.colOf) descIts = descIts.filter(i => i === dIt || cols.colOf(i).startsWith('desc'));
+        let desc = descIts.map(i => i === dIt ? i.str.trim().slice(dt.len) : i.str).join(' ').trim()
           .replace(/^\s*(\d{1,2}[\/\-.]\d{1,2}([\/\-.]\d{2,4})?)\s+/, '').replace(/^\d{1,12}\s+/, '').replace(/\s+\d{6,}$/, '').replace(/\s+/g, ' ').trim();
-        if (!desc || /^(SALDO|TOTAL|SUBTOTAL|RESUMEN|FECHA)\b/i.test(desc)) return;
+        if (!desc || /^(SALDO|TOTAL|SUBTOTAL|RESUMEN|FECHA|PERIODO|AL\s+\d)\b/i.test(desc) || /\d{2}[\/\-]\d{2}[\/\-]\d{4}\s+AL\s+\d{2}/i.test(ln.text)) return;
         let amount = null, dir = null, saldo = null;
         const vals = amts.map(a => ({ a, v: parseAmt(a.str) }));
         if (cols && cols.out != null) {
@@ -618,11 +643,18 @@ const P = (() => {
         out.rows.push(row);
       });
     });
+    const below = re => { for (const pg of pages) { for (const lb of pg.items) { if (!re.test(U(lb.str))) continue; const c = center(lb); const cand = pg.items.filter(i => i !== lb && /\d/.test(i.str) && AMT_RE.test(i.str.trim()) && /[.\d]{3,}/.test(i.str) && Math.abs(center(i) - c) < 50 && lb.y - i.y > 2 && lb.y - i.y < 48).sort((a, b) => (lb.y - a.y) - (lb.y - b.y)); if (cand.length) return parseAmt(cand[0].str); } } return null; };
+    if (tot.out == null) { const v = below(/TOTAL (DE )?(CARGOS|DEBITOS|GIROS)/); if (v != null) tot.out = Math.abs(v); }
+    if (tot.in == null) { const v = below(/TOTAL (DE )?(ABONOS|CREDITOS|DEPOSITOS)/); if (v != null) tot.in = Math.abs(v); }
+    if (tot.ini == null) { const v = below(/^SALDO (ANTERIOR|INICIAL)/); if (v != null) tot.ini = v; }
+    if (tot.fin == null) { const v = below(/^SALDO (FINAL|CONTABLE)/); if (v != null) tot.fin = v; }
     const sOut = out.rows.filter(r => r.dir === 'out').reduce((s, r) => s + r.amount, 0), sIn = out.rows.filter(r => r.dir === 'in').reduce((s, r) => s + r.amount, 0);
     if (tot.out != null) out.checks.push({ label: 'Cargos', got: sOut, expected: tot.out });
     if (tot.in != null) out.checks.push({ label: 'Abonos', got: sIn, expected: tot.in });
     if (tot.ini != null && tot.fin != null && !isTC) out.checks.push({ label: 'Saldo final calculado', got: tot.ini + sIn - sOut, expected: tot.fin });
-    out.statementDate = toDate; out.period = allDates.length >= 2 ? { from: allDates[0], to: toDate } : null;
+    const pm = T.match(/(?:PERIODO|DESDE)\s*:?\s*(\d{2}[\/\-]\d{2}[\/\-]\d{4})\s*(?:AL|A|HASTA|-)\s*(\d{2}[\/\-]\d{2}[\/\-]\d{4})/);
+    if (pm) { const f = dmy(pm[1].replace(/-/g, '/')), t2 = dmy(pm[2].replace(/-/g, '/')); out.period = { from: f, to: t2 }; out.statementDate = t2; }
+    else { out.statementDate = toDate; out.period = allDates.length >= 2 ? { from: allDates[0], to: toDate } : null; }
     const acct = T.match(/(?:N[°º]?\s?(?:DE\s)?CUENTA|CUENTA(?: CORRIENTE| VISTA| RUT| DE AHORRO)?\s?N[°º]?)\s*:?\s*([\d\-\.]{6,})/);
     const card = T.match(/X{4}[\s\-]?X{4}[\s\-]?X{4}[\s\-]?(\d{4})|\*{4}\s?(\d{4})/);
     const id = card ? (card[1] || card[2]) : acct ? acct[1].replace(/\D/g, '').slice(-4) : '';
@@ -652,7 +684,8 @@ const L = (() => {
     moto: { n: 'Moto y vehículo', e: '🏍️', c: '#5856D6' },
     hogar: { n: 'Hogar y arriendo', e: '🏠', c: '#A2845E' },
     cuentas: { n: 'Cuentas y servicios', e: '💡', c: '#FFCC00' },
-    salud: { n: 'Salud', e: '🩺', c: '#FF2D55' },
+    salud: { n: 'Salud y bienestar', e: '🩺', c: '#FF2D55' },
+    efectivo: { n: 'Giros en efectivo', e: '🏧', c: '#64D2FF' },
     mascotas: { n: 'Mascotas', e: '🐾', c: '#BF8B5E' },
     suscripciones: { n: 'Suscripciones', e: '📺', c: '#AF52DE' },
     compras: { n: 'Compras', e: '🛍️', c: '#007AFF' },
@@ -671,8 +704,9 @@ const L = (() => {
 
   const R = [
     [/INTERES|IMPTO|IMPUESTO|COMISION|^COM\./, 'banco'],
-    [/TRASPASO (CON|DE|A) (LA )?CUENTA|AMORTIZACION PERIODICA LCA|LINEA DE CREDITO/, 'interno'],
-    [/MONTO CANCELADO|PAGO (AUTOMATICO )?(DE )?TARJETA|PAC TARJETA|PAGO TC\b|PAGO (VISA|MASTERCARD)/, 'interno'],
+    [/TRASPASO (CON|DE|A) (LA )?CUENTA|AMORTIZACION PERIODICA LCA|LINEA DE CREDITO|SOBREGIRO|CUENTAS? PROPIAS?|ENTRE CUENTAS|LINEA DE EMERGENCIA/, 'interno'],
+    [/MONTO CANCELADO|PAGO (AUTOMATICO )?(DE )?(DEUDA )?TARJETA|PAC TARJETA|PAGO TC\b|PAGO (VISA|MASTERCARD)|PAGO DEUDA TARJETA/, 'interno'],
+    [/GIRO CAJ|GIRO (EN )?CAJERO|GIRO ATM|RETIRO (DE )?EFECTIVO|GIRO POR CAJA|AVANCE EN EFECTIVO/, 'efectivo'],
     [/OTORGAMIENTO CREDITO/, 'interno'],
     [/CUOTA CREDITO|PAGO CREDITO|DIVIDENDO|AVANCE EN CUOTAS/, 'creditos'],
     [/REMUNERACION|SUELDO|NOMINA|LIQUIDACION DE SUELDO|ANTICIPO DE SUELDO/, 'sueldo', 'in'],
@@ -680,28 +714,36 @@ const L = (() => {
     [/^COM\.|COMISION|MANTENCION PLAN|IMPTO|IMPUESTO|INTERES/, 'banco'],
     [/SEGURO|ZURICH|MAPFRE|\bSURA\b|CONSORCIO|\bHDI\b|METLIFE/, 'seguros'],
     [/COPEC|SHELL|PETROBRAS|ARAMCO|\bENEX\b|TERPEL/, 'combustible'],
-    [/PARKING|ESTACIONAMIENTO|\bSABA\b|AUTOPISTA|PEAJE|COSTANERA|VESPUCIO|UBER(?! ?EATS)|CABIFY|DIDI|\bMETRO\b|\bBIP\b|RED MOVILIDAD|TURBUS|PULLMAN/, 'transporte'],
+    [/SANTA ISABEL|STA\.? ISABEL|FRUTAL|FRUTA|VERDULER|CARNES|CARNICER|\bLIDER\b|JUMBO|UNIMARC|TOTTUS|ACUENTA|\bHIPER|LIDER\.CL|ALMACEN|MINIMARK|MARKET|VEGUITA|\bVEGA\b|\bFERIA\b|OXXO|SUPERMERCADO|CARNICERIA|PANADERIA|BOTILLERIA/, 'supermercado'],
+    [/PARKING|ESTACIONAMIENTO|\bSABA\b|AUTOPISTA|PEAJE|COSTANERA NORTE|VESPUCIO|UBER(?! ?EATS)|CABIFY|DIDI|\bMETRO\b|\bBIP\b|RED MOVILIDAD|TURBUS|PULLMAN/, 'transporte'],
     [/REPUESTO|\bMOTO|AUTOFACT|TALLER|LUBRICENTRO|NEUMATIC|REVISION TECNICA|PERMISO DE CIRCULACION|YAMAHA|HONDA|SUZUKI|KAWASAKI|\bKTM\b/, 'moto'],
-    [/SANTA ISABEL|\bLIDER\b|JUMBO|UNIMARC|TOTTUS|ACUENTA|\bHIPER|ALMACEN|MINIMARKET|MARKET|VEGUITA|\bVEGA\b|\bFERIA\b|OXXO|SUPERMERCADO|CARNICERIA|PANADERIA|BOTILLERIA/, 'supermercado'],
-    [/DUNKIN|STARBUCKS|JUAN VALDEZ|\bCAFE|MC ?DONALDS|BURGER|\bBK\b|\bKFC\b|PIZZA|SUSHI|HORNITOS|EMPANADA|RESTAURANT|RESTO\b|DOGGIS|PEDIDOSYA|RAPPI|UBER ?EATS|IL FORNO|\bBAR\b|COMIDA|CARAMELO|HELAD|PASTELERIA|DELIVERY|JUSTO/, 'comida'],
-    [/FARMACIA|CRUZ VERDE|SALCOBRAND|AHUMADA|DR\.? SIMI|CLINICA|DENTAL|ODONTO|MEDIC|LABORATORIO|ISAPRE|FONASA|OPTICA|KINE/, 'salud'],
+    [/DUNKIN|STARBUCKS|JUAN VALDEZ|\bCAFE|MC ?DONALDS|BURGER|\bBK\b|\bKFC\b|PIZZA|SUSHI|HORNITOS|EMPANADA|RESTAURANT|RESTO\b|DOGGIS|PEDIDOSYA|RAPPI|UBER ?EATS|IL FORNO|\bBAR\b|COMIDA|CARAMELO|HELAD|PASTELERIA|DELIVERY|JUSTO|PAPA ?JOHNS|PAPAS |KAMAKURA|DOMINO|TELEPIZZA|SANGUCH|CAFETERIA|RESTOBAR/, 'comida'],
+    [/FARMACIA|CRUZ VERDE|SALCOBRAND|AHUMADA|DR\.? SIMI|CLINICA|DENTAL|DENT\b|DERMODENT|ODONTO|MEDIC|LABORATORIO|ISAPRE|FONASA|OPTICA|KINE|SALUD|PILATES|GIMNASIO|SMART ?FIT|YOGA|ENERGY|SPORTLIFE/, 'salud'],
     [/\bPET\b|VETERINAR|MASCOT|SUPERZOO|\bZOO\b/, 'mascotas'],
     [/NETFLIX|SPOTIFY|YOUTUBE|GOOGLE|APPLE\.COM|ITUNES|DISNEY|\bHBO\b|\bMAX\b|PRIME VIDEO|AMAZON PRIME|CHATGPT|OPENAI|CLAUDE|ANTHROPIC|ICLOUD|MICROSOFT|XBOX|PLAYSTATION|STEAM|PARAMOUNT/, 'suscripciones'],
     [/INMOBILIARIA|ARRIENDO|GASTOS? COMUNES|EDIFICIO|CONDOMINIO|INSPECT HOME|HOMECENTER|SODIMAC|\bEASY\b|CONSTRUMART|FERRETERIA|IKEA/, 'hogar'],
     [/UNIRED|SERVIPAG|\bENEL\b|AGUAS|METROGAS|LIPIGAS|ABASTIBLE|GASCO|ENTEL|MOVISTAR|\bCLARO\b|\bWOM\b|\bVTR\b|\bGTD\b|\bCGE\b|ESSBIO|ESVAL/, 'cuentas'],
-    [/FALABELLA|\bPARIS\b|RIPLEY|MERCADO ?LIBRE|AMAZON|ALIEXPRESS|SHEIN|TEMU|\bH&M\b|\bZARA\b|\bMALL\b|KUSHKI|TIENDA|PLAZA OESTE|PLAZA/, 'compras'],
+    [/CASA IDEAS|DECOR/, 'hogar'],
+    [/MERCADOLI|FALABELLA|\bPARIS\b|RIPLEY|MERCADO ?LIBRE|AMAZON|ALIEXPRESS|SHEIN|TEMU|\bH&M\b|\bZARA\b|\bMALL\b|KUSHKI|TIENDA|PLAZA OESTE|PLAZA/, 'compras'],
   ];
-  const isTransfer = d => /^TRANSF(\.|ERENCIA)?\b/.test(d);
+  const isTransfer = d => /^(TRANSF(ER(ENCIA)?S?|\.)?|TEF)\b|^TRASPASO DE FONDOS A TERCERO|^ABONO TERCEROS/.test(d);
 
   // Nombre limpio y clave del comercio
   function clean(raw) {
     let d = (raw || '').replace(/\s+/g, ' ').trim();
+    const d0 = (raw || '').replace(/\s+/g, ' ').trim();
+    const NICE = [[/^GIRO (CAJ|EN CAJERO|CAJERO|ATM).*/i, 'Giro en cajero automático'], [/^COMPRA (CON )?TARJETA (DE )?DEBITO$/i, 'Compra con tarjeta de débito'], [/^CARGO POR COMPRA TARJETA REDCOMPRA$/i, 'Compra Redcompra'],
+      [/^TRASPASO DESDE LINEA (DE )?SOBREGIRO.*/i, 'Traspaso desde línea de sobregiro'], [/^PAGO AUTO(MATICO)? (LINEA )?SOBREGIRO.*/i, 'Pago automático línea de sobregiro'], [/^AMORTIZACION LINEA DE SOBREGIRO.*/i, 'Pago línea de sobregiro'],
+      [/^ABONO POR TRASPASO FONDOS CUENTA PROPIA.*/i, 'Traspaso desde cuenta propia'], [/^TRASPASO DE FONDOS ENTRE CUENTAS PROPIAS.*/i, 'Traspaso a cuenta propia'], [/^TRASPASO DE FONDOS A TERCERO.*/i, 'Transferencia a tercero'],
+      [/^PAGO DEUDA TARJETA DE CREDITO.*/i, 'Pago tarjeta de crédito'], [/^PAC TARJETA DE CREDITO.*/i, 'Pago automático tarjeta de crédito'], [/^PAGO AUTOMATICO TARJETA.*/i, 'Pago automático tarjeta de crédito']];
+    for (const [re, nm] of NICE) if (re.test(d0)) { const key = U(nm).replace(/[^A-Z ]/g, ' ').replace(/\s+/g, ' ').trim(); return { name: nm, key, kind: '' }; }
     let kind = '';
     d = d.replace(/^Compra (Nacional|Internacional) (VD|VE|TC)\s*/i, '').replace(/^(COMPRA|COMPRAS)( EN)?\s+(?=\S+)/i, '').replace(/^PAC\s+/i, '').replace(/\s*PAI:?\s*\d*\s*$/i, '');
-    const t = d.match(/^Transf(?:\.|erencia)?\s*(a|de)?\s+/i);
+    d = d.replace(/^ABONO TERCEROS\s+[\dK\-.]+\s+/i, 'Transferencia de ');
+    const t = d.match(/^(?:Transf(?:erencia|er)?s?\.?|TEF)\s*(a|de)?\s+/i);
     if (t) { kind = /de/i.test(t[1] || '') ? 'Transferencia recibida' : (t[1] ? 'Transferencia enviada' : 'Transferencia'); d = d.slice(t[0].length); }
     d = d.replace(/\b(MERPAGO|DL|TUU|SUMUP|PAYU|MP)\s?\*\s?/gi, '').replace(/\*/g, ' ')
-      .replace(/\b\d{6,}\b/g, '').replace(/^\d{3,}-/, '').replace(/\s+N°\s*$/i, '').replace(/(\s\d{1,4}){2,}\s*$/, '').replace(/\s+/g, ' ').trim();
+      .replace(/\b\d{6,}\b/g, '').replace(/\s+\d{4,5}\s*$/, '').replace(/^\d{3,}-/, '').replace(/\bMERCADOLI\b/i, 'Mercado Libre').replace(/^DP\s+/i, '').replace(/\s+N°\s*$/i, '').replace(/(\s\d{1,4}){2,}\s*$/, '').replace(/\s+/g, ' ').trim();
     const words = d.split(' '); const seen = new Set();
     d = words.filter(w => { const k = U(w); if (seen.has(k) && k.length > 2) return false; seen.add(k); return true; }).join(' ');
     const key = U(d).replace(/[^A-Z ]/g, ' ').replace(/\s+/g, ' ').trim() || U(raw);
@@ -838,7 +880,7 @@ async function idbBoot() {
 }
 try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
 
-const VERSION = '1.4.0';
+const VERSION = '1.4.1';
 const LOGK = 'finanzas-log', PEND = 'finanzas-pendiente';
 function logErr(where, e) {
   try { const l = JSON.parse(localStorage.getItem(LOGK) || '[]'); l.unshift({ t: new Date().toISOString(), v: VERSION, w: where, m: String(e && (e.stack || e.message) || e).slice(0, 400) }); localStorage.setItem(LOGK, JSON.stringify(l.slice(0, 8))); } catch (x) {}

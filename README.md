@@ -30,6 +30,7 @@ Ajustes → **Exportar respaldo** en un equipo, y **Importar respaldo** en el ot
 
 ## Historial
 
+- **1.4.1:** lector general más robusto (títulos de columnas en dos líneas, columnas de sucursal y documento separadas de la descripción, totales y período en cualquier ubicación); nombres más claros y nuevas categorías (giros en efectivo, línea de sobregiro, cuentas propias); validado con cartola Bci.
 - **1.4.0:** carga de varias cartolas a la vez (meses, bancos y tipos distintos), pestaña Para ti con alertas de cobros dobles y movimientos inusuales, gráfico de dona interactivo, búsqueda con panel de categorías y filtros rápidos, Ajustes por secciones, Resumen al centro de la barra y sin punto rojo.
 - **1.3.1:** el aviso de cartola sin guardar desaparece si la cartola ya estaba guardada y se puede descartar; los intereses de la línea de crédito cuentan como gasto.
 - **1.3.0:** base de datos local IndexedDB (con copia de respaldo), vista de cartolas guardadas con detalle y eliminación, exportación a Excel (CSV), el resumen y los movimientos muestran siempre lo guardado (incluidos internos y cuotas sin cobrar) y diagnóstico ampliado.
